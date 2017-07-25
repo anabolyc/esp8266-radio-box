@@ -6,7 +6,6 @@
 #define SERIAL_DEBUG 0 // GPIO2
 
 HttpServer server;
-void onNtpReceive(NtpClient &client, time_t timestamp);
 
 Timer printTimer;
 

@@ -56,7 +56,7 @@ var app = {
     init: function () {
 
         if (location.host == '') {
-            app.websocket = new WebSocket("ws://192.168.1.20/");
+            app.websocket = new WebSocket("ws://192.168.1.90/");
         } else {
             app.websocket = new WebSocket("ws://" + location.host + "/");
         }
