@@ -1,20 +1,20 @@
 <!DOCTYPE html>
-<html lang="en" manifest="soundbox.appcache">
+<html lang="en">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Sound Box</title>
-    <link href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" rel="stylesheet">
-    <link href="style.css" rel="stylesheet">
+    <title>Radio Box</title>
+    <link href="app.css" rel="stylesheet">
 </head>
 
 <body>
-<div class="container">
+<link href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" rel="stylesheet">
+<div class="container" ng-app="default-app" ng-controller="radio-controller">
     <div class="header">
-        <h1>Sound box
-            <button type="button" class="btn btn-default" id="power">Power</button>
+        <h1>
+        <button type="button" class="btn btn-lg" ng-click="togglePower">Radio Box</button>
         </h1>
-
+        <!--
         <div class="bs-example bs-example-tabs" data-example-id="togglable-tabs">
             <ul class="nav nav-tabs" id="myTabs" role="tablist">
                 <li role="presentation" class="active">
@@ -99,16 +99,19 @@
                                   <span class="input-group-btn">
                                       <button id="lcd-text-send" class="btn btn-default" type="button">Send!</button>
                                   </span>
-                            </div><!-- /input-group -->
-                        </div><!-- /.col-lg-6 -->
-                    </div><!-- /.row -->
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
-        </div>
+        </div> -->
     </div>
 </div>
-<script src="http://code.jquery.com/jquery-2.2.4.min.js"></script>
+<script src="https://code.jquery.com/jquery-2.2.4.min.js"
+  integrity="sha256-BbhdlvQf/xTY9gja0Dq3HiwQF8LaCRTXxZKRutelT44="
+  crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/angular.js/1.6.5/angular.min.js"></script>
 <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
-<script src="index.js"></script>
+<script src="app.js"></script>
 </body>
 </html>
