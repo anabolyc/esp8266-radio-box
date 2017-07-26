@@ -19,9 +19,14 @@
 #EXTRA_INCDIR = include $SMING_HOME/third-party/esp-open-lwip/
 
 ## Configure flash parameters (for ESP12-E and other new boards):
+# SPI_MODE: qio, qout, dio, dout  
 # SPI_MODE = dio
+
+# SPI_SIZE: 512K, 256K, 1M, 2M, 4M
+SPI_SIZE = 4M
 
 ## SPIFFS options
 #DISABLE_SPIFFS = 1
- SPIFF_FILES = files
+
+SPIFF_FILES = files
 
