@@ -1,6 +1,9 @@
 #include <user_config.h>
 #include <SmingCore.h>
 #include <Wire.h>
+#include "IRadio.h"
+#include "RadioModule.h"
+#include "RadioScreen.h"
 
 int PT2323_ADDRESS = 74;
 int PT2258_ADDRESS = 68;

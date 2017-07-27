@@ -9,6 +9,11 @@ HttpServer server;
 
 Timer printTimer;
 
+IRadio *radioServices[2] = { 
+	new RadioModule(), 
+	new RadioScreen()
+};
+
 int totalActiveSockets = 0;
 int mute = 0;
 int mixing = 1;
