@@ -1,9 +1,7 @@
 #include "RadioModule.h"
 
-//TEA5767 radio; // = new TEA5767();
-
 RadioModule::RadioModule(void) {
-
+    //TEA5767 *radio = new TEA5767();
 }
 
 double RadioModule::getVolume()

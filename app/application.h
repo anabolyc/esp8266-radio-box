@@ -1,6 +1,9 @@
 #include <user_config.h>
+#include <radio.h>
+#include <TEA5767.h>
 #include <SmingCore.h>
 #include <Wire.h>
+
 #include "IRadio.h"
 #include "RadioModule.h"
 #include "RadioScreen.h"

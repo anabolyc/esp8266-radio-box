@@ -2,7 +2,9 @@
 #define RADIO_MODULE_H
 
 #include "IRadio.h"
-#include "../include/tea5767/TEA5767.h"
+
+#include <radio.h>
+#include <TEA5767.h>
 
 class RadioModule : public IRadio
 {

@@ -73,9 +73,7 @@
 
 // ----- implement
 
-// initialize the extra variables in SI4703
-TEA5767::TEA5767() {
-}
+TEA5767::TEA5767(void) {}
 
 // initialize all internals.
 bool TEA5767::init() {
