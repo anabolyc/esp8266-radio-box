@@ -1,5 +1,186 @@
+* {
+    font-family: 'Roboto Mono', monospace;
+}
+
+html, body {
+    height: 100%;
+    margin: 0;
+    padding: 0;
+
+}
+
 *, button {
     outline-offset: 0px !important;
     outline-style: none;
     outline-width: 0px !important;
+}
+
+.power-switch {
+    margin-top: 20px;
+}
+
+.volume-slider {
+    padding-top: 5px
+}
+
+.row-header {
+    height: 5vh;
+}
+
+.row-band {
+    padding-top: 10em;
+    height: 50vh;
+    font-weight: 800;
+}
+
+.div-freq {
+    font-size: 500%;
+}
+
+.div-band, .div-unit {
+    padding-top: 3em;
+}
+
+.row-rds {
+    height: 5vh;
+}
+
+.row-title {
+    height: 5vh;
+    font-size: 175%;
+    font-weight: 800;
+}
+
+.row-arrows {
+    height: 15vh;
+    font-size: 3em;
+}
+
+.row-switches {
+    height: 10vh;
+    font-size: 75%;
+    font-weight: 800;
+}
+
+.row-volume {
+    height: 10vh;
+    padding-top: 2em;
+}
+
+/*    SWITCH   
+---------------------------*/
+
+/* The switch - the box around the slider */
+.switch {
+  position: relative;
+  display: inline-block;
+  width: 60px;
+  height: 34px;
+}
+
+/* Hide default HTML checkbox */
+.switch input {display:none;}
+
+/* The slider */
+.slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #ccc;
+  -webkit-transition: .4s;
+  transition: .4s;
+}
+
+.slider:before {
+  position: absolute;
+  content: "";
+  height: 26px;
+  width: 26px;
+  left: 4px;
+  bottom: 4px;
+  background-color: white;
+  -webkit-transition: .4s;
+  transition: .4s;
+}
+
+input:checked + .slider {
+  background-color: #2196F3;
+}
+
+input:focus + .slider {
+  box-shadow: 0 0 1px #2196F3;
+}
+
+input:checked + .slider:before {
+  -webkit-transform: translateX(26px);
+  -ms-transform: translateX(26px);
+  transform: translateX(26px);
+}
+
+/* Rounded sliders */
+.slider.round {
+  border-radius: 34px;
+}
+
+.slider.round:before {
+  border-radius: 50%;
+}
+
+/*   VOLUME SLIDER
+---------------------------*/
+
+.range-slider {
+  width: 100%;
+}
+
+.range-slider__range {
+  -webkit-appearance: none;
+  width: calc(100% - (73px));
+  height: 10px;
+  border-radius: 5px;
+  background: #d7dcdf;
+  outline: none;
+  padding: 0;
+  margin: 0;
+}
+.range-slider__range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+          appearance: none;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #2c3e50;
+  cursor: pointer;
+  -webkit-transition: background .15s ease-in-out;
+  transition: background .15s ease-in-out;
+}
+
+.range-slider__range::-webkit-slider-thumb:hover {
+  background: #1abc9c;
+}
+
+.range-slider__range:active::-webkit-slider-thumb {
+  background: #1abc9c;
+}
+
+.range-slider__range::-moz-range-thumb {
+  width: 20px;
+  height: 20px;
+  border: 0;
+  border-radius: 50%;
+  background: #2c3e50;
+  cursor: pointer;
+  -webkit-transition: background .15s ease-in-out;
+  transition: background .15s ease-in-out;
+}
+
+.range-slider__range::-moz-range-thumb:hover {
+  background: #1abc9c;
+}
+
+.range-slider__range:active::-moz-range-thumb {
+  background: #1abc9c;
 }

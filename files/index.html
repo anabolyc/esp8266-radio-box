@@ -5,113 +5,97 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Radio Box</title>
     <link href="app.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css?family=Roboto+Mono:300" rel="stylesheet">
+    <link href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" rel="stylesheet">
 </head>
-
 <body>
-<link href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" rel="stylesheet">
-<div class="container" ng-app="default-app" ng-controller="radio-controller">
-    <div class="header">
-        <h1>
-        <button type="button" class="btn btn-lg" ng-click="togglePower">Radio Box</button>
-        </h1>
-        <!--
-        <div class="bs-example bs-example-tabs" data-example-id="togglable-tabs">
-            <ul class="nav nav-tabs" id="myTabs" role="tablist">
-                <li role="presentation" class="active">
-                    <a href="#volume" id="home-tab" role="tab" data-toggle="tab" aria-controls="volume"
-                       aria-expanded="true">Volume</a>
-                </li>
-                <li role="presentation">
-                    <a href="#radio" role="tab" id="radio-tab" data-toggle="tab"
-                       aria-controls="radio" aria-expanded="false">Radio</a>
-                </li>
-                <li role="presentation">
-                    <a href="#settings" role="tab" id="settings-tab" data-toggle="tab"
-                       aria-controls="settings" aria-expanded="false">Settings</a>
-                </li>
-            </ul>
-            <div class="tab-content" id="myTabContent">
-                <div class="tab-pane fade active in" role="tabpanel" id="volume" aria-labelledby="volume-tab">
-                    <h3> Source </h3>
-
-                    <div class="btn-group" role="group">
-                        <button id="source51" type="button" data-value="0" data-paramname="source"
-                                class="btn btn-default btn-sm source">5.1
-                        </button>
-                        <button id="sourceAUX1" type="button" data-value="1" data-paramname="source"
-                                class="btn btn-default btn-sm source">Radio
-                        </button>
-                        <button id="sourceAUX2" type="button" data-value="2" data-paramname="source"
-                                class="btn btn-default btn-sm source">AUX 2
-                        </button>
-                        <button id="sourceAUX3" type="button" data-value="3" data-paramname="source"
-                                class="btn btn-default btn-sm source">AUX 3
-                        </button>
-                        <button id="sourceAUX4" type="button" data-value="4" data-paramname="source"
-                                class="btn btn-default btn-sm source">AUX 4
-                        </button>
-                    </div>
-
-                    <div style="margin-top: 30px;">All <input id="volumeALLCH" type="range" max="74" min="0" data-channel="0" class=" volume "/>
-                    </div>
-                    <div>Front Left <input id="volumeFL" type="range" max="74" min="0" data-channel="1"
-                                           class="volumeFL volume"/>
-                    </div>
-                    <div>Front Right <input id="volumeFR" type="range" max="74" min="0" data-channel="2"
-                                            class=" volume"/>
-                    </div>
-                    <div>Rear Left <input id="volumeRL" type="range" max="74" min="0" data-channel="3" class=" volume"/>
-                    </div>
-                    <div>Rear Right <input id="volumeRR" type="range" max="74" min="0" data-channel="4"
-                                           class=" volume"/>
-                    </div>
-                    <div>Sub woofer <input id="volumeSW" type="range" max="74" min="0" data-channel="5"
-                                           class=" volume"/>
-                    </div>
-                    <div>Center <input id="volumeCEN" type="range" max="74" min="0" data-channel="6" class="volume"/>
-                    </div>
-                </div>
-                <div class="tab-pane fade" role="tabpanel" id="radio" aria-labelledby="radio-tab">
-                    <h3> FM Tuner - <span id="freq">000.0</span>MHz </h3>
-
-                    <div><input id="frequency" type="range" max="108" step="0.1" min="92"></div>
-
-                    <div class="btn-group" role="group" style="margin-top: 30px;">
-                        <button type="button" data-value="-1" class="btn btn-default btn-sm tune">-1Mhz</button>
-                        <button type="button" data-value="-0.1" class="btn btn-default btn-sm tune">-100Hz</button>
-                        <button type="button" data-value="+0.1" class="btn btn-default btn-sm tune">+100Hz</button>
-                        <button type="button" data-value="+1" class="btn btn-default btn-sm tune">+1Mhz</button>
-                    </div>
-
-
-                </div>
-                <div class="tab-pane fade" role="tabpanel" id="settings" aria-labelledby="settings-tab">
-                    <h3> State </h3>
-                    <button id="mixing" type="button" class="btn btn-default mixing">Mixing</button>
-                    <button id="enhance" type="button" class="btn btn-default">Enhance</button>
-                    <button id="mute" type="button" class="btn btn-default">Mute</button>
-                    <h3> LCD </h3>
-
-                    <div class="row">
-                        <div class="col-lg-6">
-                            <div class="input-group">
-                                <input type="text" id="lcd-text" class="form-control" placeholder="LCD text">
-                                  <span class="input-group-btn">
-                                      <button id="lcd-text-send" class="btn btn-default" type="button">Send!</button>
-                                  </span>
-                            </div>
-                        </div>
-                    </div>
+    <div class="container" ng-app="default-app" ng-controller="radio-controller">
+        <div class="row row-header">
+            <div class="col-xs-9 text-left">
+                <h2>{{state.title}}</h2>
+            </div>
+            <div class="col-xs-3 text-right">
+                <label class="power-switch switch">
+                    <input type="checkbox" ng-checked="state.power" ng-model="state.power" ng-change="togglePower()">
+                    <span class="slider round"></span>
+                </label>
+            </div>
+        </div>
+        <div class="row row-band">
+            <div class="col-xs-2 text-right div-band" ng-model="state.band" ng-click="toggleBand()">
+                {{state.station.band}}
+            </div>
+            <div class="col-xs-8 text-center div-freq">
+                {{state.station.freq}}
+            </div>
+            <div class="col-xs-2 text-left div-unit">
+                {{state.station.unit}}
+            </div>
+        </div>
+        <div class="row row-title">
+            <div class="col-xs-12 text-center">
+                {{state.station.title}}
+            </div>
+        </div>
+        <div class="row row-rds">
+            <div class="col-xs-12 text-center">
+                {{state.station.rds}}
+            </div>
+        </div>
+        <div class="row row-arrows">
+            <div class="col-xs-2 text-right" ng-click="moveStation(-1)">
+                <i class="glyphicon glyphicon-step-backward"></i>
+            </div>
+            <div class="col-xs-2 text-right" ng-click="moveStep(-1)">
+                <i class="glyphicon glyphicon-menu-left"></i>
+            </div>
+            <div class="col-xs-4"></div>
+            <div class="col-xs-2 text-left" ng-click="moveStep(1)">
+                <i class="glyphicon glyphicon-menu-right"></i>
+            </div>
+            <div class="col-xs-2 text-left" ng-click="moveStation(1)">
+                <i class="glyphicon glyphicon-step-forward"></i>
+            </div>
+        </div>
+        <div class="row row-switches">
+            <div class="col-xs-3 text-center">
+                <label class="stereo-switch switch">
+                    <input type="checkbox" ng-checked="state.stereo" ng-model="state.stereo" ng-click="toggleStereo()">
+                    <span class="slider round"></span>
+                </label>
+                Stereo
+            </div>
+            <div class="col-xs-6"></div>
+            <div class="col-xs-3 text-center">
+                <label class="bass-switch switch">
+                    <input type="checkbox" ng-checked="state.bassBoost" ng-model="state.bassBoost" ng-click="toggleBass()"> 
+                    <span class="slider round"></span>
+                </label>
+                Bass&nbsp;Boost
+            </div>
+        </div>
+        <div class="row row-volume">
+            <div class="col-xs-1 text-right">
+                <i class="glyphicon glyphicon-volume-off" ng-hide="state.volume != 0" ng-cloak></i>
+                <i class="glyphicon glyphicon-volume-down" ng-hide="state.volume == 0" ng-cloak></i>
+            </div>
+            <div class="col-xs-10 text-center">
+                <div class="range-slider volume-slider">
+                    <input class="range-slider__range" type="range" ng-model="state.volume" ng-value="state.volume" min="0" max="10" ng-change="changeVolume()">
                 </div>
             </div>
-        </div> -->
+            <div class="col-xs-1 text-left">
+                <i class="glyphicon glyphicon-volume-up"></i>
+            </div>
+        </div>
     </div>
-</div>
-<script src="https://code.jquery.com/jquery-2.2.4.min.js"
-  integrity="sha256-BbhdlvQf/xTY9gja0Dq3HiwQF8LaCRTXxZKRutelT44="
-  crossorigin="anonymous"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/angular.js/1.6.5/angular.min.js"></script>
-<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
-<script src="app.js"></script>
-</body>
+    
+    <script src="https://code.jquery.com/jquery-2.2.4.min.js"
+        integrity="sha256-BbhdlvQf/xTY9gja0Dq3HiwQF8LaCRTXxZKRutelT44="
+        crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/angular.js/1.6.5/angular.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+    <script src="app.js"></script>
+
+    </body>
 </html>
