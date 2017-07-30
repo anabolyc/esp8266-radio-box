@@ -12,6 +12,7 @@
  COM_PORT = /dev/ttyUSB0
 
 ## Com port speed
+#230400
  COM_SPEED	= 115200
 
 ## Add your source directories here separated by space
@@ -23,10 +24,10 @@
 # SPI_MODE = dio
 
 # SPI_SIZE: 512K, 256K, 1M, 2M, 4M
-SPI_SIZE = 4M
+SPI_SIZE = 1M
 
 ## SPIFFS options
-#DISABLE_SPIFFS = 1
+DISABLE_SPIFFS = 1
 
 SPIFF_FILES = files
 

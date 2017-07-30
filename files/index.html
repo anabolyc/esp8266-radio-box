@@ -2,21 +2,31 @@
 <html lang="en">
 <head>
     <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="viewport" content="width=device-width, height=device-height, initial-scale=1, maximum-scale=1, user-scalable=no">
+    <!-- Android/Chrome -->
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="theme-color" content="#333333">
     <title>Radio Box</title>
     <link href="app.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css?family=Roboto+Mono:300" rel="stylesheet">
     <link href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" rel="stylesheet">
 </head>
 <body>
-    <div class="container" ng-app="default-app" ng-controller="radio-controller">
+    <div class="container" 
+        ng-app="default-app" 
+        ng-controller="radio-controller" 
+        ng-class="{ 'app-offline' : !app.connected }">
         <div class="row row-header">
             <div class="col-xs-9 text-left">
-                <h2>{{state.title}}</h2>
+                <h2>{{config.title}}</h2>
             </div>
             <div class="col-xs-3 text-right">
                 <label class="power-switch switch">
-                    <input type="checkbox" ng-checked="state.power" ng-model="state.power" ng-change="togglePower()">
+                    <input type="checkbox" 
+                        ng-checked="state.power" 
+                        ng-model="state.power" 
+                        ng-change="togglePower()"
+                        ng-disabled="!app.connected">
                     <span class="slider round"></span>
                 </label>
             </div>
@@ -60,7 +70,11 @@
         <div class="row row-switches">
             <div class="col-xs-3 text-center">
                 <label class="stereo-switch switch">
-                    <input type="checkbox" ng-checked="state.stereo" ng-model="state.stereo" ng-click="toggleStereo()">
+                    <input type="checkbox" 
+                        ng-checked="state.stereo" 
+                        ng-model="state.stereo" 
+                        ng-click="toggleStereo()"
+                        ng-disabled="!app.connected">
                     <span class="slider round"></span>
                 </label>
                 Stereo
@@ -68,7 +82,11 @@
             <div class="col-xs-6"></div>
             <div class="col-xs-3 text-center">
                 <label class="bass-switch switch">
-                    <input type="checkbox" ng-checked="state.bassBoost" ng-model="state.bassBoost" ng-click="toggleBass()"> 
+                    <input type="checkbox" 
+                        ng-checked="state.bassBoost" 
+                        ng-model="state.bassBoost" 
+                        ng-click="toggleBass()"
+                        ng-disabled="!app.connected"> 
                     <span class="slider round"></span>
                 </label>
                 Bass&nbsp;Boost
@@ -76,16 +94,16 @@
         </div>
         <div class="row row-volume">
             <div class="col-xs-1 text-right">
-                <i class="glyphicon glyphicon-volume-off" ng-hide="state.volume != 0" ng-cloak></i>
-                <i class="glyphicon glyphicon-volume-down" ng-hide="state.volume == 0" ng-cloak></i>
+                <i class="glyphicon" ng-class="{ 'glyphicon-volume-off' : state.volume == 0, 'glyphicon-volume-down' : state.volume > 0, 'glyphicon-volume-up' : state.volume > 4 }"></i>
             </div>
-            <div class="col-xs-10 text-center">
+            <div class="col-xs-11 text-center">
                 <div class="range-slider volume-slider">
-                    <input class="range-slider__range" type="range" ng-model="state.volume" ng-value="state.volume" min="0" max="10" ng-change="changeVolume()">
+                    <input class="range-slider__range" type="range" 
+                        ng-model="state.volume" 
+                        ng-value="state.volume" min="0" max="10" 
+                        ng-change="changeVolume()"
+                        ng-disabled="!app.connected">
                 </div>
-            </div>
-            <div class="col-xs-1 text-left">
-                <i class="glyphicon glyphicon-volume-up"></i>
             </div>
         </div>
     </div>

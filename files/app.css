@@ -2,6 +2,10 @@
     font-family: 'Roboto Mono', monospace;
 }
 
+.app-offline {
+  color: #aaa;
+}
+
 html, body {
     height: 100%;
     margin: 0;
@@ -79,7 +83,9 @@ html, body {
 }
 
 /* Hide default HTML checkbox */
-.switch input {display:none;}
+.switch input {
+  display: none;
+}
 
 /* The slider */
 .slider {
@@ -108,6 +114,10 @@ html, body {
 
 input:checked + .slider {
   background-color: #2196F3;
+}
+
+input:disabled + .slider {
+  background-color: #aaa;
 }
 
 input:focus + .slider {

@@ -20,15 +20,7 @@
 /// ChangeLog see: radio.h 
 
 #include "Arduino.h"
-
 #include "radio.h"
-
-// ----- Register Definitions -----
-
-// no chip-registers without a chip.
-
-
-// ----- implement
 
 /// Setup the radio object and initialize private variables to 0.
 /// Don't change the radio chip (yet).
