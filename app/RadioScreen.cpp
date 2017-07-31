@@ -2,11 +2,14 @@
 
 Adafruit_SSD1306 *display;
 
-RadioScreen::RadioScreen(void) {
-    
+RadioScreen::RadioScreen(void) 
+{
     display = new Adafruit_SSD1306(OLED_MOSI, OLED_CLK, OLED_DC, OLED_RESET, OLED_CS);
+}
 
-    display->begin(SSD1306_SWITCHCAPVCC);
+void RadioScreen::init() 
+{
+	display->begin(SSD1306_SWITCHCAPVCC);
 	display->display();
 
     display->clearDisplay();

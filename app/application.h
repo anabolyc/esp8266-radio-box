@@ -5,6 +5,9 @@
 #include "RadioModule.h"
 #include "RadioScreen.h"
 
+const int PIN_SCL = 5;
+const int PIN_SDA = 4;
+
 struct RouteDefinition {
     String path;
     HttpPathDelegate callback;

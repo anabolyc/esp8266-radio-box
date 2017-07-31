@@ -16,6 +16,8 @@ class RadioScreen : public IRadio
 {
     public:
         RadioScreen();
+
+        virtual void init();
         virtual double getVolume();
 };
 

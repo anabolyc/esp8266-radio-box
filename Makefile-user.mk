@@ -27,7 +27,7 @@
 SPI_SIZE = 1M
 
 ## SPIFFS options
-DISABLE_SPIFFS = 1
+DISABLE_SPIFFS = 0
 
 SPIFF_FILES = files
 

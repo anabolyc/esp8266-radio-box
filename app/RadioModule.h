@@ -10,6 +10,8 @@ class RadioModule : public IRadio
 {
     public:
         RadioModule();
+
+        virtual void init();
         virtual double getVolume();
 };
 

@@ -8,15 +8,15 @@ const RADIO_FREQ FIX_STATION = 10230;
 RadioModule::RadioModule(void)
 {
     radio = new TEA5767();
-    radio->debugEnable(true);
-    radio->init();
+}
 
-    /*
+void RadioModule::init() 
+{
+    radio->debugEnable(false);
+    radio->init();
     radio->setBandFrequency(FIX_BAND, FIX_STATION);
     radio->setVolume(1);
     radio->setMono(false);
-    
-    */
 }
 
 double RadioModule::getVolume()

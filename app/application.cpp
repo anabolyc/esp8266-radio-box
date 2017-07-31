@@ -6,7 +6,6 @@
 HttpServer server;
 
 const int SERVICES_LEN = 2;
-
 IRadio *radioServices[SERVICES_LEN] = { 
 	new RadioModule(), 
 	new RadioScreen()
@@ -35,22 +34,19 @@ float frequency = 0.0;
 void init()
 {
 	spiffs_mount();
+
 	Serial.begin(SERIAL_BAUD_RATE);
 	Serial.systemDebugOutput(false);
 
-	Wire.begin();
+	Wire.begin(PIN_SCL, PIN_SDA);
 
 	WifiStation.enable(true);
 	WifiStation.config(WIFI_SSID, WIFI_PWD);
 	WifiStation.waitConnection(wifiConnected, 30, wifiConnectFailed);
 
-	//Wire.beginTransmission(PT2258_ADDRESS);
-	//Wire.write(0xC0);
-	//Wire.endTransmission();
-
-	for(int i = 0; i < SERVICES_LEN; i++) {
+	for (int i = 0; i < SERVICES_LEN; i++) {
 		IRadio *x = radioServices[i];
-		int vol = x->getVolume();
+		x->init();
 	}
 }
 

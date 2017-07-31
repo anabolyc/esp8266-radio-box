@@ -4,6 +4,8 @@
 class IRadio {
    public:
     IRadio() {};
+    
+    virtual void init();
     virtual double getVolume() = 0;
 };
 
