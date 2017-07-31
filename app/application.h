@@ -8,9 +8,17 @@
 const int PIN_SCL = 5;
 const int PIN_SDA = 4;
 
+const int WM_UNKNOWN = 0;
+const int WM_VOLUME  = 1;
+
 struct RouteDefinition {
     String path;
     HttpPathDelegate callback;
+} ;
+
+struct WsMessageType {
+    int id;
+    String value;
 } ;
 
 void wifiConnected();
@@ -26,6 +34,7 @@ void onIndex(HttpRequest &request, HttpResponse &response);
 void onFile(HttpRequest &request, HttpResponse &response);
 
 void registerAllRoutes(HttpServer *srv);
+int getMessageId(String messageValue);
 
 /*
 void setVolume(int channel, int val)

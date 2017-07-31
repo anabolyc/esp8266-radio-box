@@ -23,6 +23,12 @@ void RadioScreen::init()
     display->display();
 }
 
+int RadioScreen::setVolume(int value)
+{
+    return -5;
+}
+
+
 double RadioScreen::getVolume()
 {
     return -5;

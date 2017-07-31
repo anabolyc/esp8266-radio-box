@@ -67,6 +67,14 @@
 
         self.changeVolume = function() {
             console.log("changeVolume:", self.state.volume);
+            if (!self.app.connected)
+                return console.log("offline :-(");
+            self.app.websocket.send(JSON.stringify(
+                {
+                    "name": "volume", 
+                    "value": self.state.volume
+                }
+            ));
         };
 
         var connect = function() {

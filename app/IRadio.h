@@ -6,6 +6,7 @@ class IRadio {
     IRadio() {};
     
     virtual void init();
+    virtual int setVolume(int value);
     virtual double getVolume() = 0;
 };
 

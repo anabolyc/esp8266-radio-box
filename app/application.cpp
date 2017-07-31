@@ -24,6 +24,10 @@ RouteDefinition routes[] = {
 	*/
 };
 
+WsMessageType messageDefs[] = {
+	{ WM_VOLUME, "volume" }
+};
+
 int mute = 0;
 int mixing = 1;
 int source = 0;
@@ -49,7 +53,7 @@ void init()
 		x->init();
 	}
 }
-
+ 
 void wifiConnected()
 {
 	Serial.println("WiFi ONLINE");
@@ -111,41 +115,19 @@ void wsMessageReceived(WebSocket &socket, const String &message)
 	StaticJsonBuffer<200> jsonBuffer;
 	JsonObject &root = jsonBuffer.parseObject(message);
 	String actionName = root["name"].asString();
-	/*
-	if (actionName == "enhance")
-		setEnhance(!enhance);
-	else if (actionName == "power")
-		setPower(!power);
-	else if (actionName == "mute")
-		setMmute(!mute);
-	else if (actionName == "mixing")
-		setMixing(!mixing);
-	else if (actionName == "frequency")
-		setFrequency(root["val"]);
-	else if (actionName == "source")
-		setSource(root["val"]);
-	else if (actionName == "volumeFR")
-		setVolume(CHAN_FR, root["val"]);
-	else if (actionName == "volumeFL")
-		setVolume(CHAN_FL, root["val"]);
-	else if (actionName == "volumeRR")
-		setVolume(CHAN_RR, root["val"]);
-	else if (actionName == "volumeRL")
-		setVolume(CHAN_RL, root["val"]);
-	else if (actionName == "volumeCEN")
-		setVolume(CHAN_CEN, root["val"]);
-	else if (actionName == "volumeSW")
-		setVolume(CHAN_SW, root["val"]);
-	else if (actionName == "volumeALLCH")
-		setVolume(CHAN_ALL, root["val"]);
-	else if (actionName == "volumeSW")
-		setVolume(CHAN_SW, root["val"]);
-	*/
+	String actionValue = root["value"].asString();
+	int messageId = getMessageId(actionName);
+
+	switch (messageId) {
+		case WM_VOLUME:
+			Serial.print("volume: ");
+			Serial.println(actionValue);
+			break;
+	}
+
 	sendUpdate();
 	Serial.printf("WebSocket message received:\r\n%s\r\n", actionName.c_str());
 }
-
-/* ================================= */
 
 void onIndex(HttpRequest &request, HttpResponse &response)
 {
@@ -176,4 +158,13 @@ void registerAllRoutes(HttpServer *srv) {
 		Serial.print("Registered route: ");
 		Serial.println(routes[i].path);
 	}
+}
+
+int getMessageId(String messageValue) {
+	int count = sizeof(messageDefs) / sizeof(WsMessageType);
+	int result = 0;
+	for (int i = 0; i < count; i++)
+		if (messageValue == messageDefs[i].value)
+			return messageDefs[i].id;
+	return WM_UNKNOWN;
 }
