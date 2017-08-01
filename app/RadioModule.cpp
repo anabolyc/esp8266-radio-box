@@ -19,11 +19,21 @@ void RadioModule::init()
     radio->setMono(false);
 }
 
+int RadioModule::getVolume()
+{
+    return radio->getVolume();
+}
+
 int RadioModule::setVolume(int value)
 {
     radio->setMute(value == 0);
     radio->setVolume(value);
     return value;
+}
+
+bool RadioModule::getMono()
+{
+    return radio->getMono();
 }
 
 bool RadioModule::setMono(bool value)
@@ -32,10 +42,20 @@ bool RadioModule::setMono(bool value)
     return value;
 }
 
+RADIO_BAND RadioModule::getBand() 
+{
+    return radio->getBand();
+}
+
 RADIO_BAND RadioModule::setBand(RADIO_BAND band) 
 {
     radio->setBand(band);
     return band;
+}
+
+RADIO_FREQ RadioModule::getFrequency() 
+{
+    return radio->getFrequency();
 }
 
 RADIO_FREQ RadioModule::setFrequency(RADIO_FREQ freq) 

@@ -28,14 +28,34 @@ int RadioScreen::setVolume(int value)
     return value;
 }
 
+int RadioScreen::getVolume()
+{
+    return 0;
+}
+
 bool RadioScreen::setMono(bool value)
 {
     return value;
 }
 
+bool RadioScreen::getMono()
+{
+    return false;
+}
+
+RADIO_BAND RadioScreen::getBand() 
+{
+    return RADIO_BAND_NONE;
+}
+
 RADIO_BAND RadioScreen::setBand(RADIO_BAND band) 
 {
     return band;
+}
+
+RADIO_FREQ RadioScreen::getFrequency() 
+{
+    return 0;
 }
 
 RADIO_FREQ RadioScreen::setFrequency(RADIO_FREQ freq) 

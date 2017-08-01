@@ -41,6 +41,12 @@ void init()
 		IRadio *x = radioServices[i];
 		x->init();
 	}
+
+	IRadio *x = radioServices[0];
+	state.volume = x->getVolume();
+	state.mono = x->getMono();
+	state.band = x->getBand();
+	state.freq = x->getFrequency();
 }
  
 void wifiConnected()
