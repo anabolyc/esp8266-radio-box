@@ -12,7 +12,8 @@
                 id : 2,
                 name: "FM",
                 mlt: 100,
-                step: 5,
+                step: 10,
+                round: 10,
                 unit: "MHz"
             }]
             //bands: ["FM", "AM", "KW"],
@@ -72,6 +73,7 @@
             if (!self.app.connected || !self.state.power)
                 return console.log("offline :-(");
             self.state.station.freq += x * self.state.band.step;
+            self.state.station.freq = Math.round(self.state.station.freq / self.state.band.round) * self.state.band.round;
             console.log("moveStep:", self.state.station.freq);
             self.app.websocket.send(JSON.stringify(
                 {
