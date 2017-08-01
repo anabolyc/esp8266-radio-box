@@ -12,7 +12,7 @@
                 id : 2,
                 name: "FM",
                 mlt: 100,
-                step: 10,
+                step: 5,
                 unit: "MHz"
             }]
             //bands: ["FM", "AM", "KW"],
@@ -30,10 +30,6 @@
                 rds: "---"
             },
             band: self.config.bands[0]
-            /*
-            bandIndex: function() { 
-                return self.config.bands.indexOf(self.state.station.band); 
-            } */
         };
         
         self.app = {
@@ -87,7 +83,7 @@
 
         self.toggleStereo = function() { 
             console.log("toggleStereo:", self.state.stereo);
-            if (!self.app.connected || !self.state.power)
+            if (!self.app.connected)
                 return console.log("offline :-(");
             self.app.websocket.send(JSON.stringify(
                 {
@@ -103,7 +99,7 @@
 
         self.changeVolume = function() {
             console.log("changeVolume:", self.state.volume);
-            if (!self.app.connected || !self.state.power)
+            if (!self.app.connected)
                 return console.log("offline :-(");
             self.app.websocket.send(JSON.stringify(
                 {
