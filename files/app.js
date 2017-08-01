@@ -6,25 +6,34 @@
 
         var self = $scope;
         
+        self.config = {
+            title: "Radio Box",
+            bands: [{
+                id : 2,
+                name: "FM",
+                mlt: 100,
+                step: 10,
+                unit: "MHz"
+            }]
+            //bands: ["FM", "AM", "KW"],
+            //bandValues: [2, 3, 4],
+        };
+
         self.state = {  
             power: true,
             bassBoost: true,
             stereo: false,
             volume: 0,
             station: {
-                band: "FM",
-                freq: 102.3,
-                unit: "MHz",
-                title: "Radio Wrocław",
-                rds: "RDS blah blah"
+                freq: 0,
+                title: "---",
+                rds: "---"
             },
-            bandIndex: function() { return self.config.bands.indexOf(self.state.station.band); }
-        };
-
-        self.config = {
-            title: "Radio Box",
-            bands: ["AM", "FM"],
-            freqStep: [100, 0.1],
+            band: self.config.bands[0]
+            /*
+            bandIndex: function() { 
+                return self.config.bands.indexOf(self.state.station.band); 
+            } */
         };
         
         self.app = {
@@ -34,40 +43,67 @@
 
         self.togglePower = function() {
             console.log("togglePower:", self.state.power);
+            if (self.state.power) {
+                self.state.volume = 5;
+                self.changeVolume();    
+            } else {
+                self.state.volume = 0;
+                self.changeVolume();
+            }
         };
 
         self.toggleBand = function() {
-            if (!self.app.connected)
+            if (!self.app.connected || !self.state.power)
                 return console.log("offline :-(");
-            var newBand = self.config.bands[(self.state.bandIndex() + 1) % self.config.bands.length];
-            self.state.station.band = newBand;
-            console.log("togglePower:", newBand);
+            var bandIndex = (self.config.bands.indexOf(self.state.band) + 1) % self.config.bands.length;
+            self.state.band = self.config.bands[bandIndex];
+            console.log("toggleBand:", self.state.band);
+            self.app.websocket.send(JSON.stringify(
+                {
+                    "name": "band", 
+                    "value": self.state.band.id
+                }
+            ));
         };
 
         self.moveStation = function(x) {
-            if (!self.app.connected)
-                return console.log("offline :-(");
-            console.log("moveStation:", x);
+            //if (!self.app.connected)
+            //    return console.log("offline :-(");
+            //console.log("moveStation:", x);
         };
         
         self.moveStep = function(x) {
-            if (!self.app.connected)
+            if (!self.app.connected || !self.state.power)
                 return console.log("offline :-(");
-            self.state.station.freq += x * self.config.freqStep[self.state.bandIndex()];
-            console.log("moveStep:", x);
+            self.state.station.freq += x * self.state.band.step;
+            console.log("moveStep:", self.state.station.freq);
+            self.app.websocket.send(JSON.stringify(
+                {
+                    "name": "freq", 
+                    "value": self.state.station.freq
+                }
+            ));
         };
 
         self.toggleStereo = function() { 
             console.log("toggleStereo:", self.state.stereo);
+            if (!self.app.connected || !self.state.power)
+                return console.log("offline :-(");
+            self.app.websocket.send(JSON.stringify(
+                {
+                    "name": "mono", 
+                    "value": !self.state.stereo
+                }
+            ));
         };
 
         self.toggleBass = function() {
-            console.log("toggleBass:", self.state.bassBoost);
+            //console.log("toggleBass:", self.state.bassBoost);
         };
 
         self.changeVolume = function() {
             console.log("changeVolume:", self.state.volume);
-            if (!self.app.connected)
+            if (!self.app.connected || !self.state.power)
                 return console.log("offline :-(");
             self.app.websocket.send(JSON.stringify(
                 {
@@ -77,12 +113,14 @@
             ));
         };
 
-        var connect = function() {
+        var connect = function(callback) {
             var socket = new WebSocket("ws://" + (location.host || NODE_IP)); 
             socket.onopen = function() {
                 console.log('WS conn');
                 self.app.connected = true;
                 $scope.$apply();
+                if (callback)
+                    callback();
             };
 
             socket.onclose = function(event) {
@@ -94,7 +132,16 @@
             };
 
             socket.onmessage = function(event) {
-                console.log("WS data", event);
+                var data = JSON.parse(event.data);
+                if (data.type == "state") {
+                    self.state.stereo = !data.mono;
+                    self.state.volume = data.volume;
+                    self.state.station.freq = data.freq;
+                    var matchingBands = self.config.bands.filter(function(b) { return b.id == data.band; });
+                    self.state.band = matchingBands.length > 0 ? matchingBands.pop() : self.config.bands[0];
+                    $scope.$apply();
+                }
+                console.log("WS data", data, self.state);
             };
 
             socket.onerror = function(error) {
@@ -105,7 +152,9 @@
         };
 
         (function() {
-            connect();
+            connect(function() {
+                console.log("webSocket connected!");
+            });
         })();
 
     }]);

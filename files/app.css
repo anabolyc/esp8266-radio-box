@@ -6,6 +6,10 @@
   color: #aaa;
 }
 
+.app-off {
+  color: #aaa;
+}
+
 html, body {
     height: 100%;
     margin: 0;

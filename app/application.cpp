@@ -4,36 +4,25 @@
 #define WIFI_PWD "9263777101"
 
 HttpServer server;
+RadioState state;
 
-const int SERVICES_LEN = 2;
+const int SERVICES_LEN = 1;
+
 IRadio *radioServices[SERVICES_LEN] = { 
-	new RadioModule(), 
-	new RadioScreen()
+	// new RadioScreen(),
+	new RadioModule() 
 };
 
 RouteDefinition routes[] = {
 	{ "/", onIndex }
-	/*
-	server.addPath("/volume", onVolume);
-	server.addPath("/mute", onMute);
-	server.addPath("/state", onState);
-	server.addPath("/power", onPower);
-	server.addPath("/tune", onTune);
-	server.addPath("/mixing", onMixing);
-	server.addPath("/enhance", onEnhance);
-	*/
 };
 
 WsMessageType messageDefs[] = {
-	{ WM_VOLUME, "volume" }
+	{ WM_VOLUME, "volume" },
+	{ WM_MONO  , "mono" },
+	{ WM_BAND  , "band" },
+	{ WM_FREQ  , "freq" }
 };
-
-int mute = 0;
-int mixing = 1;
-int source = 0;
-int enhance = 0;
-int power = 0;
-float frequency = 0.0;
 
 void init()
 {
@@ -90,22 +79,19 @@ void sendUpdate()
 {
 	StaticJsonBuffer<300> sendJsonBuffer;
 	JsonObject &json = sendJsonBuffer.createObject();
+
 	json["type"] = "state";
-	json["mute"] = mute;
-	json["source"] = source;
-	json["mixing"] = mixing;
-	json["enhance"] = enhance;
-	json["frequency"] = frequency;
-	json["power"] = power;
+	json["volume"] = state.volume;
+	json["mono"] = state.mono;
+	json["band"] = (int)state.band;
+	json["freq"] = state.freq;
 
 	String jsonString;
 	json.printTo(jsonString);
 
 	WebSocketsList &clients = server.getActiveWebSockets();
 	for (int i = 0; i < clients.count(); i++)
-	{
 		clients[i].sendString(jsonString);
-	}
 }
 
 void wsMessageReceived(WebSocket &socket, const String &message)
@@ -116,17 +102,53 @@ void wsMessageReceived(WebSocket &socket, const String &message)
 	JsonObject &root = jsonBuffer.parseObject(message);
 	String actionName = root["name"].asString();
 	String actionValue = root["value"].asString();
+	int x = root["value"];
 	int messageId = getMessageId(actionName);
 
 	switch (messageId) {
 		case WM_VOLUME:
-			Serial.print("volume: ");
-			Serial.println(actionValue);
+			{
+				int res = 0;
+				for (int i = 0; i < SERVICES_LEN; i++) {
+					IRadio *service = radioServices[i];
+					res = service->setVolume(x);
+				}
+				state.volume = res;
+			}
+			break;
+		case WM_MONO:
+			{
+				bool res = 0;
+				for (int i = 0; i < SERVICES_LEN; i++) {
+					IRadio *service = radioServices[i];
+					res = service->setMono(x);
+				}
+				state.mono = res;
+			}
+			break;
+		case WM_BAND:
+			{
+				RADIO_BAND res = RADIO_BAND_NONE;
+				for (int i = 0; i < SERVICES_LEN; i++) {
+					IRadio *service = radioServices[i];
+					res = service->setBand((RADIO_BAND)x);
+				}
+				state.band = res;
+			}
+			break;
+		case WM_FREQ:
+			{
+				RADIO_FREQ res = 0;
+				for (int i = 0; i < SERVICES_LEN; i++) {
+					IRadio *service = radioServices[i];
+					res = service->setFrequency(x);
+				}
+				state.freq = res;
+			}
 			break;
 	}
 
 	sendUpdate();
-	Serial.printf("WebSocket message received:\r\n%s\r\n", actionName.c_str());
 }
 
 void onIndex(HttpRequest &request, HttpResponse &response)

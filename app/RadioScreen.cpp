@@ -25,11 +25,20 @@ void RadioScreen::init()
 
 int RadioScreen::setVolume(int value)
 {
-    return -5;
+    return value;
 }
 
-
-double RadioScreen::getVolume()
+bool RadioScreen::setMono(bool value)
 {
-    return -5;
+    return value;
+}
+
+RADIO_BAND RadioScreen::setBand(RADIO_BAND band) 
+{
+    return band;
+}
+
+RADIO_FREQ RadioScreen::setFrequency(RADIO_FREQ freq) 
+{
+    return freq;
 }

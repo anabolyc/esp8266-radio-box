@@ -15,7 +15,7 @@
     <div class="container" 
         ng-app="default-app" 
         ng-controller="radio-controller" 
-        ng-class="{ 'app-offline' : !app.connected }">
+        ng-class="{ 'app-offline' : !app.connected, 'app-off' : !state.power }">
         <div class="row row-header">
             <div class="col-xs-9 text-left">
                 <h2>{{config.title}}</h2>
@@ -33,13 +33,13 @@
         </div>
         <div class="row row-band">
             <div class="col-xs-2 text-right div-band" ng-model="state.band" ng-click="toggleBand()">
-                {{state.station.band}}
+                {{state.band.name}}
             </div>
             <div class="col-xs-8 text-center div-freq">
-                {{state.station.freq}}
+                {{state.station.freq / state.band.mlt}}
             </div>
             <div class="col-xs-2 text-left div-unit">
-                {{state.station.unit}}
+                {{state.band.unit}}
             </div>
         </div>
         <div class="row row-title">
@@ -74,7 +74,7 @@
                         ng-checked="state.stereo" 
                         ng-model="state.stereo" 
                         ng-click="toggleStereo()"
-                        ng-disabled="!app.connected">
+                        ng-disabled="!app.connected || !state.power">
                     <span class="slider round"></span>
                 </label>
                 Stereo
@@ -86,7 +86,7 @@
                         ng-checked="state.bassBoost" 
                         ng-model="state.bassBoost" 
                         ng-click="toggleBass()"
-                        ng-disabled="!app.connected"> 
+                        ng-disabled="true"> 
                     <span class="slider round"></span>
                 </label>
                 Bass&nbsp;Boost
@@ -102,7 +102,7 @@
                         ng-model="state.volume" 
                         ng-value="state.volume" min="0" max="10" 
                         ng-change="changeVolume()"
-                        ng-disabled="!app.connected">
+                        ng-disabled="!app.connected || !state.power">
                 </div>
             </div>
         </div>

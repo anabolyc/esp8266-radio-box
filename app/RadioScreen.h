@@ -19,7 +19,10 @@ class RadioScreen : public IRadio
 
         virtual void init();
         virtual int setVolume(int value);
-        virtual double getVolume();
+        virtual bool setMono(bool value);
+        virtual RADIO_BAND setBand(RADIO_BAND band);
+        virtual RADIO_FREQ setFrequency(RADIO_FREQ freq);
+
 };
 
 #endif

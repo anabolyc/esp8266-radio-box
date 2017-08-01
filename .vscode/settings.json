@@ -3,6 +3,7 @@
         "initializer_list": "cpp",
         "type_traits": "cpp",
         "*.ipp": "cpp",
-        "*.tcc": "cpp"
+        "*.tcc": "cpp",
+        "system_error": "cpp"
     }
 }
