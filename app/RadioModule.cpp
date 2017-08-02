@@ -1,20 +1,21 @@
 #include "RadioModule.h"
 
-TEA5767 *radio;
+RDA5807M *radio;
 
 const RADIO_BAND FIX_BAND = RADIO_BAND_FM;
-const RADIO_FREQ FIX_STATION = 10230;
+const RADIO_FREQ FIX_STATION = 9920;
 
 RadioModule::RadioModule(void)
 {
-    radio = new TEA5767();
+    radio = new RDA5807M();
 }
 
 void RadioModule::init() 
 {
     radio->debugEnable(false);
     radio->init();
-    radio->setBandFrequency(FIX_BAND, FIX_STATION);
+    radio->setBand(FIX_BAND);
+    radio->setFrequency(FIX_STATION);
     radio->setVolume(0);
     radio->setMono(false);
 }

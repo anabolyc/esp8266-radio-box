@@ -45,3 +45,4 @@ void onFile(HttpRequest &request, HttpResponse &response);
 
 void registerAllRoutes(HttpServer *srv);
 int getMessageId(String messageValue);
+void updateState(IRadio *service);

@@ -5,6 +5,7 @@
 
 #include <radio.h>
 #include <TEA5767.h>
+#include <RDA5807M.h>
 
 class RadioModule : public IRadio
 {

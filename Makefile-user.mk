@@ -12,8 +12,8 @@
  COM_PORT = /dev/ttyUSB0
 
 ## Com port speed
-#230400
- COM_SPEED	= 115200
+# 115200 230400
+ COM_SPEED	= 230400
 
 ## Add your source directories here separated by space
 # MODULES = app

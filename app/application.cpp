@@ -6,11 +6,15 @@
 HttpServer server;
 RadioState state;
 
+Timer wsClientTimer;
+
 const int SERVICES_LEN = 1;
+
+IRadio *_radio = new RadioModule();
 
 IRadio *radioServices[SERVICES_LEN] = { 
 	// new RadioScreen(),
-	new RadioModule() 
+	_radio
 };
 
 RouteDefinition routes[] = {
@@ -42,17 +46,26 @@ void init()
 		x->init();
 	}
 
-	IRadio *x = radioServices[0];
-	state.volume = x->getVolume();
-	state.mono = x->getMono();
-	state.band = x->getBand();
-	state.freq = x->getFrequency();
+	updateState(_radio);
 }
- 
+
+void updateState(IRadio *service) {
+	state.volume = service->getVolume();
+	state.mono = service->getMono();
+	state.band = service->getBand();
+	state.freq = service->getFrequency();
+
+	Serial.print("vol: ");
+	Serial.println(state.volume);
+	Serial.print("frq: ");
+	Serial.println(state.freq);
+}
+
 void wifiConnected()
 {
 	Serial.println("WiFi ONLINE");
 	startWebServer(&server);
+	wsClientTimer.initializeMs(1000, sendUpdate).start();
 }
 
 void wifiConnectFailed()
@@ -86,6 +99,8 @@ void sendUpdate()
 	StaticJsonBuffer<300> sendJsonBuffer;
 	JsonObject &json = sendJsonBuffer.createObject();
 
+	updateState(_radio);
+
 	json["type"] = "state";
 	json["volume"] = state.volume;
 	json["mono"] = state.mono;
@@ -114,22 +129,32 @@ void wsMessageReceived(WebSocket &socket, const String &message)
 	switch (messageId) {
 		case WM_VOLUME:
 			{
+				Serial.print("WM_VOLUME -> ");
+				Serial.println(x);
 				int res = 0;
 				for (int i = 0; i < SERVICES_LEN; i++) {
 					IRadio *service = radioServices[i];
 					res = service->setVolume(x);
 				}
 				state.volume = res;
+
+				Serial.print("vol -> ");
+				Serial.println(res);
 			}
 			break;
 		case WM_MONO:
 			{
+				Serial.print("WM_MONO -> ");
+				Serial.println(x);
 				bool res = 0;
 				for (int i = 0; i < SERVICES_LEN; i++) {
 					IRadio *service = radioServices[i];
 					res = service->setMono(x);
 				}
 				state.mono = res;
+
+				Serial.print("mono -> ");
+				Serial.println(res);
 			}
 			break;
 		case WM_BAND:
@@ -144,17 +169,20 @@ void wsMessageReceived(WebSocket &socket, const String &message)
 			break;
 		case WM_FREQ:
 			{
+				Serial.print("WM_FREQ -> ");
+				Serial.println(x);
 				RADIO_FREQ res = 0;
 				for (int i = 0; i < SERVICES_LEN; i++) {
 					IRadio *service = radioServices[i];
 					res = service->setFrequency(x);
 				}
 				state.freq = res;
+
+				Serial.print("freq -> ");
+				Serial.println(res);
 			}
 			break;
 	}
-
-	sendUpdate();
 }
 
 void onIndex(HttpRequest &request, HttpResponse &response)
