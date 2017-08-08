@@ -86,7 +86,7 @@
                         ng-checked="state.bassBoost" 
                         ng-model="state.bassBoost" 
                         ng-click="toggleBass()"
-                        ng-disabled="true"> 
+                        ng-disabled="!app.connected || !state.power">
                     <span class="slider round"></span>
                 </label>
                 Bass&nbsp;Boost

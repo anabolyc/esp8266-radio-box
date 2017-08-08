@@ -64,9 +64,15 @@
         };
 
         self.moveStation = function(x) {
-            //if (!self.app.connected)
-            //    return console.log("offline :-(");
-            //console.log("moveStation:", x);
+            if (!self.app.connected)
+                return console.log("offline :-(");
+            console.log("moveStation:", x);
+            self.app.websocket.send(JSON.stringify(
+                {
+                    "name": x == 1 ? "seek_up" : "seek_down", 
+                    "value": null
+                }
+            ));
         };
         
         self.moveStep = function(x) {
@@ -96,7 +102,15 @@
         };
 
         self.toggleBass = function() {
-            //console.log("toggleBass:", self.state.bassBoost);
+            console.log("toggleBass:", self.state.bassBoost);
+            if (!self.app.connected)
+                return console.log("offline :-(");
+            self.app.websocket.send(JSON.stringify(
+                {
+                    "name": "bass_boost", 
+                    "value": self.state.bassBoost
+                }
+            ));
         };
 
         self.changeVolume = function() {
@@ -135,6 +149,7 @@
                     self.state.stereo = !data.mono;
                     self.state.volume = data.volume;
                     self.state.station.freq = data.freq;
+                    self.state.bassBoost = data.bass;
                     var matchingBands = self.config.bands.filter(function(b) { return b.id == data.band; });
                     self.state.band = matchingBands.length > 0 ? matchingBands.pop() : self.config.bands[0];
                     $scope.$apply();
@@ -142,7 +157,7 @@
                 console.log("WS data", data, self.state);
             };
 
-            socket.onerror = function(error) {
+                socket.onerror = function(error) {
                 console.log("WS error", error);
             };
 

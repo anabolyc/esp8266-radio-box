@@ -25,6 +25,17 @@ int RadioModule::getVolume()
     return radio->getVolume();
 }
 
+bool RadioModule::setBassBoost(bool value)
+{
+    radio->setBassBoost(value);
+    return value;
+}
+
+bool RadioModule::getBassBoost()
+{
+    return radio->getBassBoost();
+}
+
 int RadioModule::setVolume(int value)
 {
     radio->setMute(value == 0);
@@ -63,4 +74,22 @@ RADIO_FREQ RadioModule::setFrequency(RADIO_FREQ freq)
 {
     radio->setFrequency(freq);
     return radio->getFrequency();
+}
+
+void RadioModule::seekUp() 
+{
+    radio->seekUp();
+}
+
+void RadioModule::seekDown() 
+{
+    radio->seekDown();
+}
+
+void RadioModule::getAudioInfo(AUDIO_INFO *info) {
+    radio->getAudioInfo(info);
+}
+
+void RadioModule::getRadioInfo(RADIO_INFO *info) {
+    radio->getRadioInfo(info);
 }

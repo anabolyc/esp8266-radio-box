@@ -8,11 +8,14 @@
 const int PIN_SCL = 5;
 const int PIN_SDA = 4;
 
-const int WM_UNKNOWN = 0;
-const int WM_VOLUME  = 1;
-const int WM_MONO    = 2;
-const int WM_BAND    = 3;
-const int WM_FREQ    = 4;
+const int WM_UNKNOWN   = 0;
+const int WM_VOLUME    = 1;
+const int WM_MONO      = 2;
+const int WM_BAND      = 3;
+const int WM_FREQ      = 4;
+const int WM_SEEK_UP   = 5;
+const int WM_SEEK_DOWN = 6;
+const int WM_BASS_BOOST= 7;
 
 struct RouteDefinition {
     String path;
@@ -27,6 +30,7 @@ struct WsMessageType {
 struct RadioState {
 	int volume;
 	bool mono;
+    bool bassBoost;
 	RADIO_BAND band;
 	RADIO_FREQ freq; 
 } ;
