@@ -155,21 +155,30 @@ void RDA5807M::setBand(RADIO_BAND newBand) {
 // retrieve the real frequency from the chip after automatic tuning.
 RADIO_FREQ RDA5807M::getFrequency() {
   // check register A
-  Wire.requestFrom (I2C_SEQ, 2);
-  registers[RADIO_REG_RA] = _read16();
-  Wire.endTransmission();
+  
+  while (true) {
+    Wire.requestFrom(I2C_SEQ, 2);
+    uint16_t readValue = _read16();
+    if (readValue != 0xffff) {
+      registers[RADIO_REG_RA] = readValue;
+      Wire.endTransmission();
+      break;
+    }
+  }
 
   uint16_t ch = registers[RADIO_REG_RA] & RADIO_REG_RA_NR;
-  
+/*
   Serial.println("----FREQ----");
   Serial.print(" reg = ");
   Serial.print(registers[RADIO_REG_RA]);
+  Serial.print(" 0xffff = ");
+  Serial.print(0xffff);
   Serial.print(" ch = ");
   Serial.print(ch);
   Serial.print(" _freqLow = ");
   Serial.println(_freqLow);
   Serial.println("------------");
-
+*/
   _freq = _freqLow + (ch * 10);  // assume 100 kHz spacing
   return (_freq);
 }  // getFrequency
@@ -279,7 +288,7 @@ uint16_t RDA5807M::_read16(void)
 {
   uint8_t hiByte = Wire.read();
   uint8_t loByte = Wire.read();
-  return(256*hiByte + loByte);
+  return(256 * hiByte + loByte);
 } // _read16
 
 

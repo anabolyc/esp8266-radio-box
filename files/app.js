@@ -25,6 +25,7 @@
             bassBoost: true,
             stereo: false,
             volume: 0,
+            storedVolume: 0,
             station: {
                 freq: 0,
                 title: "---",
@@ -41,9 +42,10 @@
         self.togglePower = function() {
             console.log("togglePower:", self.state.power);
             if (self.state.power) {
-                self.state.volume = 5;
+                self.state.volume = self.state.storedVolume;
                 self.changeVolume();    
             } else {
+                self.state.storedVolume = self.state.volume;
                 self.state.volume = 0;
                 self.changeVolume();
             }
@@ -113,14 +115,15 @@
             ));
         };
 
-        self.changeVolume = function() {
-            console.log("changeVolume:", self.state.volume);
+        self.changeVolume = function(value) {
+            value = typeof(value) == "undefined" ? self.state.volume : value;
+            console.log("changeVolume:", value);
             if (!self.app.connected)
                 return console.log("offline :-(");
             self.app.websocket.send(JSON.stringify(
                 {
                     "name": "volume", 
-                    "value": self.state.volume
+                    "value": value
                 }
             ));
         };
