@@ -186,10 +186,8 @@ void TEA5767::setBand(RADIO_BAND newBand) {
 */
 RADIO_FREQ TEA5767::getFrequency() {
   _readRegisters();
-
   unsigned long frequencyW = ((status[REG_1] & REG_1_PLL) << 8) | status[REG_2];
   frequencyW = ((frequencyW * QUARTZ / 4) - FILTER) / 10000;
-
   return ((RADIO_FREQ)frequencyW);
 }  // getFrequency
 

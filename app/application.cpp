@@ -14,7 +14,8 @@ IRadio *_radio = new RadioModule();
 
 IRadio *radioServices[SERVICES_LEN] = {
 	// new RadioScreen(),
-	_radio};
+	_radio
+};
 
 RouteDefinition routes[] = {
 	{"/", onIndex}};
@@ -45,6 +46,7 @@ void init()
 	{
 		IRadio *x = radioServices[i];
 		x->init();
+		x->attachRdsCallback(rdsCallBack);
 	}
 
 	updateState(_radio);
@@ -57,6 +59,7 @@ void updateState(IRadio *service)
 	state.band = service->getBand();
 	state.freq = service->getFrequency();
 	state.bassBoost = service->getBassBoost();
+	
 	{
 		RADIO_INFO info;
 		service->getRadioInfo(&info);
@@ -210,7 +213,7 @@ void wsMessageReceived(WebSocket &socket, const String &message)
 		state.freq = res;
 
 		Serial.print("freq -> ");
-		Serial.println(res);
+		Serial.println(state.freq);
 	}
 	break;
 	case WM_SEEK_UP:
@@ -295,4 +298,13 @@ int getMessageId(String messageValue)
 		if (messageValue == messageDefs[i].value)
 			return messageDefs[i].id;
 	return WM_UNKNOWN;
+}
+
+void rdsCallBack(uint16_t block1, uint16_t block2, uint16_t block3, uint16_t block4) {
+	Serial.println("RDS: ");	
+	Serial.println(block1);	
+	Serial.println(block2);	
+	Serial.println(block3);	
+	Serial.println(block4);	
+	Serial.println("-----");	
 }

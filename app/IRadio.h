@@ -24,6 +24,8 @@ class IRadio {
 
     virtual void getAudioInfo(AUDIO_INFO *info);
     virtual void getRadioInfo(RADIO_INFO *info);
+
+    virtual void attachRdsCallback(receiveRDSFunction callback);
 };
 
 #endif

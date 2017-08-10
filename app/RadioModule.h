@@ -4,8 +4,8 @@
 #include "IRadio.h"
 
 #include <radio.h>
-#include <TEA5767.h>
 #include <RDA5807M.h>
+//#include <TEA5767.h>
 
 class RadioModule : public IRadio
 {
@@ -29,6 +29,11 @@ class RadioModule : public IRadio
         
         virtual void getAudioInfo(AUDIO_INFO *info);
         virtual void getRadioInfo(RADIO_INFO *info);
+
+        virtual void attachRdsCallback(receiveRDSFunction callback);
+
+    protected:
+        RADIO_FREQ _freq = 0;
 };
 
 #endif

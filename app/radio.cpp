@@ -123,7 +123,6 @@ void RADIO::setBand(RADIO_BAND newBand) {
     _freqLow = 8700;
     _freqHigh = 10800;
     _freqSteps = 10;
-
   }
   else if (newBand == RADIO_BAND_FMWORLD) {
     _freqLow = 7600;
@@ -205,31 +204,32 @@ void RADIO::attachReceiveRDS(receiveRDSFunction newFunction)
   _sendRDS = newFunction;
 } // attachReceiveRDS()
 
-
-// format the current frequency for display and printing
-void RADIO::formatFrequency(char *s, uint8_t length) {
-  RADIO_BAND b = getBand();
-  RADIO_FREQ f = getFrequency();
-
+void RADIO::formatFrequency(RADIO_FREQ freq, RADIO_BAND band, char *s, uint8_t length) {
   if ((s != NULL) && (length > 10)) {
     *s = '\0';
 
-    if ((b == RADIO_BAND_FM) || (b == RADIO_BAND_FMWORLD)) {
+    if ((band == RADIO_BAND_FM) || (band == RADIO_BAND_FMWORLD)) {
       // " ff.ff MHz" or "fff.ff MHz"
-      int16_to_s(s, (uint16_t)f);
+      int16_to_s(s, (uint16_t)freq);
 
       // insert decimal point
       s[5] = s[4]; s[4] = s[3]; s[3] = '.';
 
       // append units
-      strcpy(s+6, " MHz");
+      // strcpy(s+6, " MHz");
     } // if
 
     //     f = _freqLow + (channel * _bandSteps);
     //     if (f < 10000) Serial.write(' ');
     //     Serial.print(f / 100); Serial.print('.'); Serial.print(f % 100); Serial.print(" MHz ");
   } // if
+}
 
+// format the current frequency for display and printing
+void RADIO::formatFrequency(char *s, uint8_t length) {
+  RADIO_BAND b = getBand();
+  RADIO_FREQ f = getFrequency();
+  formatFrequency(f, b, s, length);
 } // formatFrequency()
 
 

@@ -14,9 +14,11 @@ void RadioModule::init()
 {
     radio->debugEnable(false);
     radio->init();
+    delay(100);
+
     radio->setBand(FIX_BAND);
     radio->setFrequency(FIX_STATION);
-    radio->setVolume(0);
+    radio->setVolume(1);
     radio->setMono(false);
 }
 
@@ -67,11 +69,13 @@ RADIO_BAND RadioModule::setBand(RADIO_BAND band)
 
 RADIO_FREQ RadioModule::getFrequency() 
 {
+    //return _freq != 0 ? _freq : radio->getFrequency();
     return radio->getFrequency();
 }
 
 RADIO_FREQ RadioModule::setFrequency(RADIO_FREQ freq) 
 {
+    _freq = freq;
     radio->setFrequency(freq);
     return radio->getFrequency();
 }
@@ -86,10 +90,17 @@ void RadioModule::seekDown()
     radio->seekDown();
 }
 
-void RadioModule::getAudioInfo(AUDIO_INFO *info) {
+void RadioModule::getAudioInfo(AUDIO_INFO *info) 
+{
     radio->getAudioInfo(info);
 }
 
-void RadioModule::getRadioInfo(RADIO_INFO *info) {
+void RadioModule::getRadioInfo(RADIO_INFO *info) 
+{
     radio->getRadioInfo(info);
+}
+
+void RadioModule::attachRdsCallback(receiveRDSFunction callback)
+{
+    radio->attachReceiveRDS(callback);
 }

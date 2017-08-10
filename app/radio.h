@@ -196,6 +196,7 @@ public:
   /// Format the current frequency for display and printing.
   virtual void formatFrequency(char *s, uint8_t length);
 
+  virtual void formatFrequency(RADIO_FREQ freq, RADIO_BAND band, char *s, uint8_t length);
   // ----- debug Helpers send information to Serial port
 
   virtual void debugEnable(bool enable = true);  ///< Enable sending debug information to the Serial port.

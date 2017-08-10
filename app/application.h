@@ -2,8 +2,8 @@
 #include <SmingCore.h>
 
 #include "IRadio.h"
+//#include "RadioScreen.h"
 #include "RadioModule.h"
-#include "RadioScreen.h"
 
 const int PIN_SCL = 5;
 const int PIN_SDA = 4;
@@ -48,5 +48,7 @@ void onIndex(HttpRequest &request, HttpResponse &response);
 void onFile(HttpRequest &request, HttpResponse &response);
 
 void registerAllRoutes(HttpServer *srv);
-int getMessageId(String messageValue);
+int  getMessageId(String messageValue);
 void updateState(IRadio *service);
+
+void rdsCallBack(uint16_t block1, uint16_t block2, uint16_t block3, uint16_t block4);
