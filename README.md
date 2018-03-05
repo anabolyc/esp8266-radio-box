@@ -36,7 +36,7 @@ To debug web-interface directly in IDE (no need to upload each change to mcu)
 ```
 var NODE_IP = "192.168.1.96";
 ```
-    and change to your device IP
+and change to your device IP
 3. Go to http://localhost:8080,
  when started from localhost it will connect to ws://NODE_IP (device itself should be online providing backend)
 
