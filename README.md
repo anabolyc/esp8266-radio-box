@@ -30,6 +30,16 @@ To flash device using my pcb
 1. Press FLASH and RESET
 2. Release RESET, then release FLASH - device ready to flash
 
+To debug web-interface directly in IDE (no need to upload each change to mcu)
+1. run ./debug-httpd.sh (need to have [docker](https://www.docker.com/) installed)
+2. Find this line 
+```
+var NODE_IP = "192.168.1.96";
+```
+    and change to your device IP
+3. Go to http://localhost:8080,
+ when started from localhost it will connect to ws://NODE_IP (device itself should be online providing backend)
+
 
 ## Links
 1. [Radio library by Matthias Hertel](https://github.com/mathertel/Radio)
