@@ -2,7 +2,7 @@
     var app = angular.module("default-app", []); 
     app.controller("radio-controller", ['$q', '$http', '$scope', function($q, $http, $scope) {
 
-        var NODE_IP = "192.168.1.90";
+        var NODE_IP = "192.168.1.96";
 
         var self = $scope;
         
@@ -13,19 +13,25 @@
                 name: "FM",
                 mlt: 100,
                 step: 10,
-                round: 10,
+                precision: 1,
                 unit: "MHz"
-            }]
-            //bands: ["FM", "AM", "KW"],
-            //bandValues: [2, 3, 4],
+            }],
+            host: location.host == "localhost:8080" ? NODE_IP : location.host
         };
 
+        self.capabilities = {
+            volume: true,
+            bass: true
+        };
+        
         self.state = {  
             power: true,
             bassBoost: true,
             stereo: false,
-            volume: 0,
-            storedVolume: 0,
+            volume: {
+                value: 0,
+                stored: 0
+            },
             station: {
                 freq: 0,
                 title: "---",
@@ -33,6 +39,7 @@
             },
             band: self.config.bands[0]
         };
+
         
         self.app = {
             connected: false,
@@ -40,15 +47,13 @@
         };
 
         self.togglePower = function() {
+            if (!self.app.connected)
+                return console.log("offline :-(");
             console.log("togglePower:", self.state.power);
-            if (self.state.power) {
-                self.state.volume = self.state.storedVolume;
-                self.changeVolume();    
-            } else {
-                self.state.storedVolume = self.state.volume;
-                self.state.volume = 0;
-                self.changeVolume();
-            }
+            self.app.websocket.send(JSON.stringify({
+                "name": "power", 
+                "value": self.state.power
+            }));
         };
 
         self.toggleBand = function() {
@@ -81,14 +86,13 @@
             if (!self.app.connected || !self.state.power)
                 return console.log("offline :-(");
             self.state.station.freq += x * self.state.band.step;
-            self.state.station.freq = Math.round(self.state.station.freq / self.state.band.round) * self.state.band.round;
+            var k = Math.pow(10, self.state.band.precision);
+            self.state.station.freq = Math.round(self.state.station.freq / k) * k;
             console.log("moveStep:", self.state.station.freq);
-            self.app.websocket.send(JSON.stringify(
-                {
-                    "name": "freq", 
-                    "value": self.state.station.freq
-                }
-            ));
+            self.app.websocket.send(JSON.stringify({
+                "name": "freq", 
+                "value": self.state.station.freq
+            }));
         };
 
         self.toggleStereo = function() { 
@@ -116,7 +120,7 @@
         };
 
         self.changeVolume = function(value) {
-            value = typeof(value) == "undefined" ? self.state.volume : value;
+            value = typeof(value) == "undefined" ? self.state.volume.value : value;
             console.log("changeVolume:", value);
             if (!self.app.connected)
                 return console.log("offline :-(");
@@ -129,7 +133,7 @@
         };
 
         var connect = function(callback) {
-            var socket = new WebSocket("ws://" + (location.host || NODE_IP)); 
+            var socket = new WebSocket("ws://" + self.config.host); 
             socket.onopen = function() {
                 console.log('WS conn');
                 self.app.connected = true;
@@ -148,16 +152,23 @@
 
             socket.onmessage = function(event) {
                 var data = JSON.parse(event.data);
-                if (data.type == "state") {
-                    self.state.stereo = !data.mono;
-                    self.state.volume = data.volume;
-                    self.state.station.freq = data.freq;
-                    self.state.bassBoost = data.bass;
-                    var matchingBands = self.config.bands.filter(function(b) { return b.id == data.band; });
-                    self.state.band = matchingBands.length > 0 ? matchingBands.pop() : self.config.bands[0];
-                    $scope.$apply();
+                switch (data.type) {
+                    case "state":
+                        self.state.stereo = !data.mono;
+                        if (self.capabilities.volume) 
+                            self.state.volume.value = data.volume;
+                        self.state.station.freq = data.freq;
+                        self.state.bassBoost = data.bass;
+                        var matchingBands = self.config.bands.filter(function(b) { return b.id == data.band; });
+                        self.state.band = matchingBands.length > 0 ? matchingBands.pop() : self.config.bands[0];
+                        break;
+                    case "capabilities":
+                        self.capabilities = data;
+                        break;
                 }
-                console.log("WS data", data, self.state);
+                
+                $scope.$apply(); 
+                //console.log("WS data", data, self.state);
             };
 
                 socket.onerror = function(error) {

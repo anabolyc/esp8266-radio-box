@@ -1,21 +1,7 @@
-///
-/// \file TEA5767.h
 /// \brief Library header file for the radio library to control the TEA5767 radio chip.
 ///
+/// Based on work by
 /// \author Matthias Hertel, http://www.mathertel.de
-/// \copyright Copyright (c) 2014-2015 by Matthias Hertel.\n
-/// This work is licensed under a BSD style license.\n
-/// See http://www.mathertel.de/License.aspx
-///
-/// This library enables the use of the Radio Chip SI4703.
-///
-/// More documentation and source code is available at http://www.mathertel.de/Arduino
-///
-/// ChangeLog see TEA5767.h:
-/// --------
-/// * 05.08.2014 created.
-/// * 27.05.2015 working-
-
 
 #ifndef TEA5767_h
 #define TEA5767_h
@@ -25,21 +11,24 @@
 
 #include "radio.h"
 
+const RADIO_CAP TEA5767_CAPS = { false, false, false } ;
+
 // ----- library definition -----
-
-
 /// Library to control the TEA5767 radio chip.
 class TEA5767 : public RADIO {
   public:
   const uint8_t MAXVOLUME = 15;   ///< max volume level for radio implementations.
   TEA5767();
   
-  bool   init();  // initialize library and the chip.
-  void   term();  // terminate all radio functions.
-  
+  void   init();  // initialize library and the chip.
+    
   // Control of the audio features
-  
-  /// setVolume is a non-existing function in TEA5767. It will always me MAXVOLUME.
+  RADIO_CAP getCapabilities();
+
+  // control internal STAND BY mode of chip
+  void setPower(bool value); 
+
+  /// setVolume is a non-existing function in TEA5767. It will always be MAXVOLUME.
   void   setVolume(uint8_t newVolume);
 
   // Control the bass boost function of the radio chip
@@ -59,8 +48,8 @@ class TEA5767 : public RADIO {
   void    setFrequency(RADIO_FREQ newF);
   RADIO_FREQ getFrequency(void);
 
-  void seekUp(bool toNextSender = true);   // start seek mode upwards
-  void seekDown(bool toNextSender = true); // start seek mode downwards
+  void seekUp();   // start seek mode upwards
+  void seekDown(); // start seek mode downwards
   
   void checkRDS(); // read RDS data from the current station and process when data available.
   

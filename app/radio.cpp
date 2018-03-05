@@ -1,23 +1,7 @@
-/// \file Radio.cpp
 /// \brief Library implementation for the radio libraries to control radio chips.
 ///
+/// Based on work by 
 /// \author Matthias Hertel, http://www.mathertel.de
-/// \copyright Copyright (c) 2014 by Matthias Hertel.\n
-/// This work is licensed under a BSD style license.\n
-/// See http://www.mathertel.de/License.aspx
-///
-/// \details
-/// This library enables the use of diverse radio chips by sharing the same class definition.
-/// Implementation for the following Radio Chips are available:
-/// * RDA5807M
-/// * SI4703
-///
-/// The following chip is planned to be supported too:
-/// * TEA5767
-///
-/// More documentation and source code is available at http://www.mathertel.de/Arduino
-///
-/// ChangeLog see: radio.h 
 
 #include "Arduino.h"
 #include "radio.h"
@@ -30,19 +14,22 @@ RADIO::RADIO() {
 
 
 /// The RADIO class doesn't implement a concrete chip so nothing has to be initialized.
-bool RADIO::init() {
-  return(false);
-} // init()
-
+void RADIO::init() {}
 
 /// switch the power off
 /// The RADIO class doesn't implement a concrete chip so nothing has to be terminated.
-void RADIO::term() {
-} // term()
+void RADIO::term() {}
 
+
+void RADIO::setPower(bool value) {
+  _power = value;
+}
+
+bool RADIO::getPower() {
+  return _power;
+}
 
 // ----- Volume control -----
-
 void RADIO::setVolume(uint8_t newVolume) {
   _volume = newVolume;
 } // setVolume()
@@ -145,8 +132,8 @@ void RADIO::setBandFrequency(RADIO_BAND newBand, RADIO_FREQ newFreq) {
 } // setBandFrequency()
 
 
-void RADIO::seekUp(bool)   {}
-void RADIO::seekDown(bool) {}
+void RADIO::seekUp()   {}
+void RADIO::seekDown() {}
 
 RADIO_BAND RADIO::getBand()         { return(_band); }
 RADIO_FREQ RADIO::getFrequency()    { return(_freq); }
@@ -177,6 +164,7 @@ void RADIO::getAudioInfo(AUDIO_INFO *info) {
   memset(info, 0, sizeof(AUDIO_INFO));
 
   // use current settings
+  info->power = _power;
   info->volume = _volume;
   info->mute = _mute;
   info->softmute = _softMute;
@@ -296,8 +284,8 @@ void RADIO::_printHex4(uint16_t val)
   if (val <= 0x000F) Serial.print('0');     // if less 2 Digit
   if (val <= 0x00FF) Serial.print('0');     // if less 3 Digit
   if (val <= 0x0FFF) Serial.print('0');     // if less 4 Digit
-  Serial.print(val, HEX);
-  Serial.print(' ');
+  //Serial.print(val, HEX);
+  //Serial.print(' ');
 } // _printHex4
 
 

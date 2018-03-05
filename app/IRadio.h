@@ -1,23 +1,33 @@
 #ifndef I_RADIO_H
 #define I_RADIO_H
 
-#include <radio.h>
+#include "radio_structs.h"
 
 class IRadio {
    public:
     IRadio() {};
     
     virtual void init();
-    virtual int getVolume();
-    virtual int setVolume(int value);
+    
+    virtual bool getPower();
+    virtual void setPower(bool value);
+
+    virtual uint8_t getVolume();
+    virtual void setVolume(uint8_t value);
+
     virtual bool getMono();
-    virtual bool setMono(bool value);
-    virtual bool setBassBoost(bool value);
+    virtual void setMono(bool value);
+
     virtual bool getBassBoost();
+    virtual void setBassBoost(bool value);
+
     virtual RADIO_BAND getBand();
-    virtual RADIO_BAND setBand(RADIO_BAND band);
+    virtual void setBand(RADIO_BAND band);
+
     virtual RADIO_FREQ getFrequency();
-    virtual RADIO_FREQ setFrequency(RADIO_FREQ freq);
+    virtual void setFrequency(RADIO_FREQ freq);
+
+    virtual RADIO_CAP getCapabilities();
     
     virtual void seekUp();
     virtual void seekDown();
@@ -25,7 +35,7 @@ class IRadio {
     virtual void getAudioInfo(AUDIO_INFO *info);
     virtual void getRadioInfo(RADIO_INFO *info);
 
-    virtual void attachRdsCallback(receiveRDSFunction callback);
+    //virtual void attachRdsCallback(receiveRDSFunction callback);
 };
 
 #endif

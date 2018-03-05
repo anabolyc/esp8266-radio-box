@@ -1,4 +1,5 @@
 #include "application.h"
+#include "TEA5767.h"
 
 #define WIFI_SSID "wifi-12-private"
 #define WIFI_PWD "9263777101"
@@ -8,14 +9,7 @@ RadioState state;
 
 Timer wsClientTimer;
 
-const int SERVICES_LEN = 1;
-
-IRadio *_radio = new RadioModule();
-
-IRadio *radioServices[SERVICES_LEN] = {
-	// new RadioScreen(),
-	_radio
-};
+IRadio *_radio = new TEA5767();
 
 RouteDefinition routes[] = {
 	{"/", onIndex}};
@@ -27,7 +21,8 @@ WsMessageType messageDefs[] = {
 	{WM_FREQ, "freq"},
 	{WM_SEEK_UP, "seek_up"},
 	{WM_SEEK_DOWN, "seek_down"},
-	{WM_BASS_BOOST, "bass_boost"}};
+	{WM_BASS_BOOST, "bass_boost"},
+	{WM_POWER, "power"}};
 
 void init()
 {
@@ -42,24 +37,29 @@ void init()
 	WifiStation.config(WIFI_SSID, WIFI_PWD);
 	WifiStation.waitConnection(wifiConnected, 30, wifiConnectFailed);
 
-	for (int i = 0; i < SERVICES_LEN; i++)
-	{
-		IRadio *x = radioServices[i];
-		x->init();
-		x->attachRdsCallback(rdsCallBack);
-	}
+    //_radio->debugEnable(false);
+    _radio->init();
+    delay(100);
+    _radio->setBand(FIX_BAND);
+    _radio->setFrequency(FIX_STATION);
+    //_radio->setVolume(1);
+    _radio->setMono(false);
+
+	Serial.println("Radio services started");
 
 	updateState(_radio);
+	Serial.println("Initialization finished");
 }
 
 void updateState(IRadio *service)
 {
+	state.power = service->getPower();
 	state.volume = service->getVolume();
 	state.mono = service->getMono();
 	state.band = service->getBand();
 	state.freq = service->getFrequency();
 	state.bassBoost = service->getBassBoost();
-	
+
 	{
 		RADIO_INFO info;
 		service->getRadioInfo(&info);
@@ -68,6 +68,8 @@ void updateState(IRadio *service)
 		Serial.print(state.volume);
 		Serial.print("  FRQ: ");
 		Serial.print(state.freq);
+		Serial.print("  PWR: ");
+		Serial.print(state.power);
 
 		Serial.print(info.rds ? " RDS" : " ---");
 		Serial.print(info.tuned ? " TUNED" : " -----");
@@ -98,7 +100,7 @@ void wifiConnected()
 
 void wifiConnectFailed()
 {
-	debugf("WiFi OFFLINE");
+	Serial.println("WiFi OFFLINE");
 	WifiStation.waitConnection(wifiConnected, 30, wifiConnectFailed);
 }
 
@@ -119,7 +121,28 @@ void startWebServer(HttpServer *srv)
 
 void wsConnected(WebSocket &socket)
 {
+	sendCapabilities();
 	sendUpdate();
+}
+
+void sendCapabilities()
+{
+	StaticJsonBuffer<300> sendJsonBuffer;
+	JsonObject &json = sendJsonBuffer.createObject();
+
+	RADIO_CAP caps = _radio->getCapabilities();
+
+	json["type"] = "capabilities";
+	json["volume"] = caps.volume;
+	json["bass"] = caps.bassBoost;
+	json["rds"] = caps.rds;
+
+	String jsonString;
+	json.printTo(jsonString);
+
+	WebSocketsList &clients = server.getActiveWebSockets();
+	for (int i = 0; i < clients.count(); i++)
+		clients[i].sendString(jsonString);
 }
 
 void sendUpdate()
@@ -135,6 +158,7 @@ void sendUpdate()
 	json["band"] = (int)state.band;
 	json["freq"] = state.freq;
 	json["bass"] = state.bassBoost;
+	json["power"] = state.power;
 
 	String jsonString;
 	json.printTo(jsonString);
@@ -157,101 +181,63 @@ void wsMessageReceived(WebSocket &socket, const String &message)
 
 	switch (messageId)
 	{
+	case WM_POWER:
+	{
+		Serial.print("WM_POWER -> ");
+		Serial.println(x);
+		_radio->setPower(x);
+		state.power = x;
+	}
 	case WM_VOLUME:
 	{
 		Serial.print("WM_VOLUME -> ");
 		Serial.println(x);
-		int res = 0;
-		for (int i = 0; i < SERVICES_LEN; i++)
-		{
-			IRadio *service = radioServices[i];
-			res = service->setVolume(x);
-		}
-		state.volume = res;
-
-		Serial.print("vol -> ");
-		Serial.println(res);
+		_radio->setVolume(x);
+		state.volume = x;
 	}
 	break;
 	case WM_MONO:
 	{
 		Serial.print("WM_MONO -> ");
 		Serial.println(x);
-		bool res = 0;
-		for (int i = 0; i < SERVICES_LEN; i++)
-		{
-			IRadio *service = radioServices[i];
-			res = service->setMono(x);
-		}
-		state.mono = res;
-
-		Serial.print("mono -> ");
-		Serial.println(res);
+		_radio->setMono(x);
+		state.mono = x;
 	}
 	break;
 	case WM_BAND:
 	{
-		RADIO_BAND res = RADIO_BAND_NONE;
-		for (int i = 0; i < SERVICES_LEN; i++)
-		{
-			IRadio *service = radioServices[i];
-			res = service->setBand((RADIO_BAND)x);
-		}
-		state.band = res;
+		_radio->setBand((RADIO_BAND)x);
+		state.band = (RADIO_BAND)x;
 	}
 	break;
 	case WM_FREQ:
 	{
 		Serial.print("WM_FREQ -> ");
 		Serial.println(x);
-		RADIO_FREQ res = 0;
-		for (int i = 0; i < SERVICES_LEN; i++)
-		{
-			IRadio *service = radioServices[i];
-			res = service->setFrequency(x);
-		}
-		state.freq = res;
-
-		Serial.print("freq -> ");
-		Serial.println(state.freq);
+		_radio->setFrequency(x);
+		state.freq = x;
 	}
 	break;
 	case WM_SEEK_UP:
 	{
 		Serial.print("WM_SEEK_UP -> ");
 		Serial.println(x);
-		for (int i = 0; i < SERVICES_LEN; i++)
-		{
-			IRadio *service = radioServices[i];
-			service->seekUp();
-		}
+		_radio->seekUp();
 	}
 	break;
 	case WM_SEEK_DOWN:
 	{
 		Serial.print("WM_SEEK_DOWN -> ");
 		Serial.println(x);
-		for (int i = 0; i < SERVICES_LEN; i++)
-		{
-			IRadio *service = radioServices[i];
-			service->seekDown();
-		}
+		_radio->seekDown();
 	}
 	break;
 	case WM_BASS_BOOST:
 	{
 		Serial.print("WM_BASS_BOOST -> ");
 		Serial.println(x);
-		bool res = 0;
-		for (int i = 0; i < SERVICES_LEN; i++)
-		{
-			IRadio *service = radioServices[i];
-			res = service->setBassBoost(x);
-		}
-		state.bassBoost = res;
-
-		Serial.print("bassBoost -> ");
-		Serial.println(res);
+		_radio->setBassBoost(x);
+		state.bassBoost = x;
 	}
 	break;
 	}
@@ -300,11 +286,12 @@ int getMessageId(String messageValue)
 	return WM_UNKNOWN;
 }
 
-void rdsCallBack(uint16_t block1, uint16_t block2, uint16_t block3, uint16_t block4) {
-	Serial.println("RDS: ");	
-	Serial.println(block1);	
-	Serial.println(block2);	
-	Serial.println(block3);	
-	Serial.println(block4);	
-	Serial.println("-----");	
+void rdsCallBack(uint16_t block1, uint16_t block2, uint16_t block3, uint16_t block4)
+{
+	Serial.println("RDS: ");
+	Serial.println(block1);
+	Serial.println(block2);
+	Serial.println(block3);
+	Serial.println(block4);
+	Serial.println("-----");
 }

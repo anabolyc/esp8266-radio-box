@@ -2,11 +2,12 @@
 #include <SmingCore.h>
 
 #include "IRadio.h"
-//#include "RadioScreen.h"
-#include "RadioModule.h"
 
 const int PIN_SCL = 5;
 const int PIN_SDA = 4;
+
+const RADIO_BAND FIX_BAND = RADIO_BAND_FM;
+const RADIO_FREQ FIX_STATION = 9920;
 
 const int WM_UNKNOWN   = 0;
 const int WM_VOLUME    = 1;
@@ -16,6 +17,7 @@ const int WM_FREQ      = 4;
 const int WM_SEEK_UP   = 5;
 const int WM_SEEK_DOWN = 6;
 const int WM_BASS_BOOST= 7;
+const int WM_POWER     = 8;
 
 struct RouteDefinition {
     String path;
@@ -30,6 +32,7 @@ struct WsMessageType {
 struct RadioState {
 	int volume;
 	bool mono;
+    bool power;
     bool bassBoost;
 	RADIO_BAND band;
 	RADIO_FREQ freq; 
@@ -42,6 +45,7 @@ void startWebServer(HttpServer *srv);
 void wsConnected(WebSocket &socket);
 void wsMessageReceived(WebSocket &socket, const String &message);
 
+void sendCapabilities();
 void sendUpdate();
 
 void onIndex(HttpRequest &request, HttpResponse &response);

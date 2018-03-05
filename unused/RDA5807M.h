@@ -1,29 +1,7 @@
-///
-/// \file RDA5807M.h
 /// \brief Library header file for the radio library to control the RDA5807M radio chip.
 ///
+/// Based on work by 
 /// \author Matthias Hertel, http://www.mathertel.de
-/// \copyright Copyright (c) 2014-2015 by Matthias Hertel.\n
-/// This work is licensed under a BSD style license.\n
-/// See http://www.mathertel.de/License.aspx
-/// 
-/// \details
-/// This library enables the use of the Radio Chip RDA5807M from http://www.rdamicro.com/ that supports FM radio bands and RDS data.
-///
-/// More documentation and source code is available at http://www.mathertel.de/Arduino
-///
-/// History:
-/// --------
-/// * 12.05.2014 creation of the RDA5807M library.
-/// * 28.06.2014 running simple radio
-/// * 08.07.2014 RDS data receive function can be registered.
-
-// multi-Band enabled
-
-// - - - - -
-// help from: http://arduino.vom-kuhberg.de/index.php
-//   http://projects.qi-hardware.com/index.php/p/qi-kernel/source/tree/144e9c2530f863e32a3538b06c63484401bbe314/drivers/media/radio/radio-rda5807.c
-
 
 #ifndef RDA5807M_h
 #define RDA5807M_h
@@ -104,11 +82,11 @@ class RDA5807M : public RADIO {
 
   RDA5807M();
   
-  bool   init();
+  void   init();
   void   term();
-  
+    
   // ----- Audio features -----
-  
+  bool   volumeEnabled();
   void   setVolume(uint8_t newVolume);
   void   setBassBoost(bool switchOn);
   void   setMono(bool switchOn);

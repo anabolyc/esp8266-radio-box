@@ -6,7 +6,6 @@ extern "C" {
 #endif
 
 	// UART config
-	// 115200 230400
 	#define SERIAL_BAUD_RATE 230400
 
 	// ESP SDK config

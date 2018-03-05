@@ -36,7 +36,7 @@
                 {{state.band.name}}
             </div>
             <div class="col-xs-8 text-center div-freq">
-                {{state.station.freq / state.band.mlt}}
+                {{state.station.freq / state.band.mlt | number:state.band.precision }}
             </div>
             <div class="col-xs-2 text-left div-unit">
                 {{state.band.unit}}
@@ -49,7 +49,7 @@
         </div>
         <div class="row row-rds">
             <div class="col-xs-12 text-center">
-                {{state.station.rds}}
+                {{capabilities.rds ? state.station.rds : " "}}
             </div>
         </div>
         <div class="row row-arrows">
@@ -80,7 +80,7 @@
                 Stereo
             </div>
             <div class="col-xs-6"></div>
-            <div class="col-xs-3 text-center">
+            <div class="col-xs-3 text-center" ng-show="capabilities.bass">
                 <label class="bass-switch switch">
                     <input type="checkbox" 
                         ng-checked="state.bassBoost" 
@@ -92,17 +92,17 @@
                 Bass&nbsp;Boost
             </div>
         </div>
-        <div class="row row-volume">
+        <div class="row row-volume" ng-show="capabilities.volume">
             <div class="col-xs-1 text-right">
                 <i class="glyphicon" ng-class="{ 'glyphicon-volume-off' : state.volume == 0, 'glyphicon-volume-down' : state.volume > 0, 'glyphicon-volume-up' : state.volume > 4 }"></i>
             </div>
             <div class="col-xs-11 text-center">
                 <div class="range-slider volume-slider">
                     <input class="range-slider__range" type="range" 
-                        ng-model="state.volume" 
-                        ng-value="state.volume" min="0" max="10" 
+                        ng-model="state.volume.value" 
+                        ng-value="state.volume.value" min="0" max="10" 
                         ng-change="changeVolume()"
-                        ng-disabled="!app.connected || !state.power">
+                        ng-disabled=" !app.connected || !state.power">
                 </div>
             </div>
         </div>
