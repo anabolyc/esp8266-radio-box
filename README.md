@@ -26,10 +26,16 @@ I completed implementation of TEA5767 module
 * make flashinit - run once when using new esp8266 mcu
 3. Adjust settings in Makefile-user.mk if necessary
 
+To flash device using my pcb
+1. Press FLASH and RESET
+2. Release RESET, then release FLASH - device ready to flash
+
 
 ## Links
 1. [Radio library by Matthias Hertel](https://github.com/mathertel/Radio)
 1. [Sming framework](https://github.com/SmingHub/Sming)
+1. [EasyEDA - create and order PCB](https://easyeda.com)
+1. [This project at EasyEDA](https://easyeda.com/andrey.mal/07_radiobox-dd061be66402444d946e622d28fd211e)
 
 ## Look
 ![Home page](https://raw.githubusercontent.com/anabolyc/esp8266-radio-box/master/images/screen-01.png)
