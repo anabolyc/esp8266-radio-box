@@ -1,55 +1,60 @@
-# esp8266-radio-box
+# ESP8266 Radio Box
 
-Use TEA5767 FM radio module in combination with ESP-8266 self hosted web interface
+![Open Source Hardware](/doc/images/open-source-hardware-logo.png)
+![Open Source Software](/doc/images/open-source-software-logo.png)
+
+Use TEA5767/RDA5807M FM radio module in combination with ESP8266 self hosted web interface. 
+
+## Key features
+
+- WifiMnager with built-in captive portal for the first time Wifi configuration
+- Built-in web server for mobile app like site hosting
+- Websockets server for client-server communication
+- Onboard RGB LED for status indication
+- Onmoard 240x240 px TFT screen to use offline
+- Built-in CH340 Serial-bridge for one-click firmware upload
 
 ## Motivation
 
 * Want to create web-interface for FM radio module which is
-    * nice looking
+    * good looking
     * mobile friendly
     * self-hosted
+* Later on planned also offline use, thus TFT screen
 
 ## General structure
 
-Radio module code based on good work of [Matthias Hertel](http://www.mathertel.de). 
-I completed implementation of TEA5767 module 
-* it seems to have better perception than RDA5807
-* it have no volume control, nor RDS, no bass boost, so those options are disabled in UI
-* i didn't sync my implemetation changes in RDA5807 implementation, you might want to do it yourself
+Radio module code based on good work of [Matthias Hertel](https://github.com/mathertel/Radio). 
+I added support for both RDA5807 and TEA5767 modules, however RDA5807 seems to be better choice
+* it has higher output power, so you can connect headphones directly
+* it has hardware volume control, RDS, bass boost, mute and few more, TEA5767 has none of those
+* TEA5767 seems to has better perception than RDA5807, but with a good signal doesn't make a big difference
 
-## How to use
-1. Have [Sming Framwork](https://github.com/SmingHub/Sming) installed
-2. Open project in [vscode](https://github.com/Microsoft/vscode) and use following build recepies
-* make - build project
-* attach serial - attach serial to configured port
-* make flash - build, flash to device via Serial and attach terminal to it
-* make flashinit - run once when using new esp8266 mcu
-3. Adjust settings in Makefile-user.mk if necessary
+## How to build and flash
 
-To flash device using my pcb
-1. Press FLASH and RESET
-2. Release RESET, then release FLASH - device ready to flash
+1. Install [Platformio[(https://platformio.org/) IDE (vscode with plugin at the moment of writing)
+1. Open project in the [vscode](https://github.com/Microsoft/vscode) and build using `Build` command. Use `esp8266-tea5767` or `esp8266-rda5807` environment depending on the radio chip installed.
+1. Use `Upload Filesystem Image` task to build and upload app files used by webserver
+1. Use `Upload` or `Upload and Monitor` command to flash firmware onto device.
+1. Firmware uses [WiFiManager](https://github.com/tzapu/WiFiManager) for wifi configuration. First time device will not find known WiFi nework and will start its own named ESP-XXXXXX, with ChipId suffix. Connect to that network, you will be redirected to captive portal and prompted for Wifi credentials. From this moment forward device will connect to known network automatically.
+1. Now enter http://device-ip or http://ESP-XXXXXX.lan adress to control Radio via app.
+![Home screen](doc/screen-01.png)
 
-To debug web-interface directly in IDE (no need to upload each change to mcu)
-1. run ./debug-httpd.sh (need to have [docker](https://www.docker.com/) installed)
+## How to debug web app
+
+To debug web-interface directly in IDE (no need to upload each change to ESP)
+1. run `start debug web-server` task in vscode. It assumes you have [docker](https://www.docker.com/) installed. It will start light http server on 8080 port.
 2. Find this line 
 ```
-var NODE_IP = "192.168.1.96";
+var NODE_IP = "192.168.0.36";
 ```
-and change to your device IP.
+and change to your device IP. So app is hosted on your PC now, but will talk to actual ESP via WebSockets as a backend.
+3. Acces ap at http://localhost:8080,
+ 
+## Hardware
 
-3. Go to http://localhost:8080,
- when started from localhost it will connect to ws://NODE_IP (device itself should be online providing backend)
-
-
-## Links
-1. [Radio library by Matthias Hertel](https://github.com/mathertel/Radio)
-1. [Sming framework](https://github.com/SmingHub/Sming)
-1. [EasyEDA - create and order PCB](https://easyeda.com)
-1. [This project at EasyEDA](https://easyeda.com/andrey.mal/07_radiobox-dd061be66402444d946e622d28fd211e)
+Design files can be found in [hardware](/hardware) section.
 
 ## Look
-![Home page](https://raw.githubusercontent.com/anabolyc/esp8266-radio-box/master/images/screen-01.png)
-![Device look](https://raw.githubusercontent.com/anabolyc/esp8266-radio-box/master/images/screen-02.jpg)
-![Schematics](https://raw.githubusercontent.com/anabolyc/esp8266-radio-box/master/images/screen-03.png)
-![PCB](https://raw.githubusercontent.com/anabolyc/esp8266-radio-box/master/images/screen-04.png)
+
+To be added
