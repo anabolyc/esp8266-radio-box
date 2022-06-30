@@ -2,7 +2,7 @@
     var app = angular.module("default-app", []); 
     app.controller("radio-controller", ['$q', '$http', '$scope', function($q, $http, $scope) {
 
-        var NODE_IP = "192.168.1.96";
+        var NODE_IP = "192.168.0.36";
 
         var self = $scope;
         
@@ -133,7 +133,7 @@
         };
 
         var connect = function(callback) {
-            var socket = new WebSocket("ws://" + self.config.host); 
+            var socket = new WebSocket("ws://" + self.config.host + ":81"); 
             socket.onopen = function() {
                 console.log('WS conn');
                 self.app.connected = true;
