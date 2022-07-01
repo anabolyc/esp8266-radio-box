@@ -57,4 +57,4 @@ Design files can be found in [hardware](/hardware) section.
 
 ## Look
 
-To be added
+![image](https://user-images.githubusercontent.com/5459747/176870306-7f4cc492-df85-44ec-9982-0e9591fa8682.png)
