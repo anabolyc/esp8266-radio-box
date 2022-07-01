@@ -9,11 +9,11 @@ Use TEA5767/RDA5807M FM radio module in combination with ESP8266 self hosted web
 
 ## Key features
 
-- WifiMnager with built-in captive portal for the first time Wifi configuration
+- WifiManager with built-in captive portal for the first time Wifi configuration
 - Built-in web server for mobile app like site hosting
 - Websockets server for client-server communication
 - Onboard RGB LED for status indication
-- Onmoard 240x240 px TFT screen to use offline
+- Onboard 240x240 px TFT screen to use offline
 - Built-in CH340 Serial-bridge for one-click firmware upload
 
 ## Motivation
