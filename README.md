@@ -3,7 +3,9 @@
 ![Open Source Hardware](/doc/images/open-source-hardware-logo.png)
 ![Open Source Software](/doc/images/open-source-software-logo.png)
 
-Use TEA5767/RDA5807M FM radio module in combination with ESP8266 self hosted web interface. 
+Use TEA5767/RDA5807M FM radio module in combination with ESP8266 self hosted web interface. Project includes both hardware and software components and shared via GPLv3 permissive license.
+
+![image](https://user-images.githubusercontent.com/5459747/176870489-4d6b2714-57a4-485f-a7dd-00002df2779f.png)
 
 ## Key features
 
