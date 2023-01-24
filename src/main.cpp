@@ -1,21 +1,36 @@
 #include <Arduino.h>
 #include <WiFiManager.h>
 #include <TFT_eSPI.h>
+#include <Ticker.h>
 
 WiFiManager wifiManager;
 
+#if defined(PIN_LED)
 #include "statusled.h"
+#define ENABLE_LED
+StatusLed *statusLed = new StatusLed();
+#endif
+
 #include "webserver.h"
 #include "tftdisplay.h"
 #include "logger.h"
 #include "main.h"
 
-StatusLed *statusLed = new StatusLed();
-Radio *radio = new Radio();
-RadioState *state = new RadioState(RadioCaps, radio);
-TFT_eSPI* tft = new TFT_eSPI();
-TftDisplay* tftdisplay = new TftDisplay(tft, state);
+static Radio *radio = new Radio();
+static RadioState *state = new RadioState(RadioCaps, radio);
+TFT_eSPI *tft = new TFT_eSPI();
+TftDisplay *tftdisplay = new TftDisplay(tft, state);
 WebServer *server = new WebServer(state);
+
+#if defined(PIN_BTN_L) && defined(PIN_BTN_M) && defined(PIN_BTN_R)
+#include <OneButton.h>
+#define ENABLE_BUTTONS
+OneButton *btn_l = new OneButton(PIN_BTN_L, false, false);
+OneButton *btn_m = new OneButton(PIN_BTN_M, false, false);
+OneButton *btn_r = new OneButton(PIN_BTN_R, false, false);
+#endif
+
+// Ticker *wifiTicker = new Ticker();
 
 const RADIO_BAND FIX_BAND = RADIO_BAND_FM;
 const RADIO_FREQ FIX_STATION = 9920;
@@ -35,56 +50,33 @@ void startWifi()
 	logger->printf("Setting hostname to %s\n", ssid.c_str());
 	WiFi.hostname(ssid);
 
-	if (!wifiManager.autoConnect())
-	{
-		logger->println("Failed to connect and hit timeout");
-		ESP.restart();
-	}
-	else
-	{
-		logger->printf("Connected: ");
-		logger->println(WiFi.localIP());
-		server->init();
-		statusLed->setState(ApplicationState::READY);
-	}
-}
-
-unsigned long testText()
-{
-	tft->fillScreen(TFT_BLACK);
-	unsigned long start = micros();
-	tft->setCursor(0, 0);
-	tft->setTextColor(TFT_WHITE);
-	tft->setTextSize(1);
-	tft->println("Hello World!");
-	tft->setTextColor(TFT_YELLOW);
-	tft->setTextSize(2);
-	tft->println(1234.56);
-	tft->setTextColor(TFT_RED);
-	tft->setTextSize(3);
-	tft->println(0xDEADBEEF, HEX);
-	tft->println();
-	tft->setTextColor(TFT_GREEN);
-	tft->setTextSize(5);
-	tft->println("Groop");
-	tft->setTextSize(2);
-	tft->println("I implore thee,");
-	// tft->setTextColor(TFT_GREEN,TFT_BLACK);
-	tft->setTextSize(1);
-	tft->println("my foonting turlingdromes.");
-	tft->println("And hooptiously drangle me");
-	tft->println("with crinkly bindlewurdles,");
-	tft->println("Or I will rend thee");
-	tft->println("in the gobberwarts");
-	tft->println("with my blurglecruncheon,");
-	tft->println("see if I don't!");
-	return micros() - start;
+	wifiManager.setConfigPortalBlocking(false);
+    wifiManager.setConfigPortalTimeout(60);
+	// wifiTicker->attach(1, [&](){
+	// 	logger->println("tick");
+		if (!wifiManager.autoConnect())
+		{
+			logger->println("Failed to connect and hit timeout");
+			#ifndef NO_WIFI_WAIT
+			ESP.restart();
+			#endif
+		}
+		else
+		{
+			logger->printf("Connected: ");
+			logger->println(WiFi.localIP());
+			server->init();
+			#ifdef ENABLE_LED
+			statusLed->setState(ApplicationState::READY);
+			#endif
+			// wifiTicker->detach();
+		}
+	// });
 }
 
 void setup()
 {
 	logger->begin(SERIAL_BAUD);
-	startWifi();
 
 	Wire.begin(PIN_SDA, PIN_SCL);
 	radio->init();
@@ -103,15 +95,54 @@ void setup()
 
 	tftdisplay->init();
 
-	// tft->init();
-	// tft->fillScreen(TFT_BLACK);
+#ifdef ENABLE_BUTTONS
+	pinMode(PIN_BTN_L, INPUT);
+	pinMode(PIN_BTN_M, INPUT);
+	pinMode(PIN_BTN_R, INPUT);
 
-	//testText();
+	btn_l->attachClick([](){
+        Serial.println("Button L clicked");
+		if (state->volume > 1)
+        	radio->setVolume(state->volume - 1);
+		else 
+			radio->setMute(true);
+	});
+
+	btn_l->attachLongPressStart([](){
+        Serial.println("Button L long press");
+        radio->seekDown();
+    });
+
+    btn_m->attachClick([](){
+        Serial.println("Button M clicked");
+        radio->setMono(!radio->getMono());
+    });
+
+    btn_r->attachClick([](){
+        Serial.println("Button R clicked");
+		if (radio->getMute())
+			 radio->setMute(false);
+        radio->setVolume(state->volume + 1);
+    });
+
+	btn_r->attachLongPressStart([](){
+        Serial.println("Button R long press");
+        radio->seekUp();
+    });
+#endif
+
+	startWifi();
 }
 
 void loop()
 {
 	server->loop();
+
+#ifdef ENABLE_BUTTONS
+	btn_l->tick();
+    btn_m->tick();
+    btn_r->tick();
+#endif
 }
 
 void rdsCallBack(uint16_t block1, uint16_t block2, uint16_t block3, uint16_t block4)
