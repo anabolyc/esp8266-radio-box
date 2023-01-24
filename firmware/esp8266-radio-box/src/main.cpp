@@ -30,11 +30,6 @@ OneButton *btn_m = new OneButton(PIN_BTN_M, false, false);
 OneButton *btn_r = new OneButton(PIN_BTN_R, false, false);
 #endif
 
-// Ticker *wifiTicker = new Ticker();
-
-const RADIO_BAND FIX_BAND = RADIO_BAND_FM;
-const RADIO_FREQ FIX_STATION = 9920;
-
 void startWifi()
 {
 #ifdef ESP8266
@@ -83,15 +78,8 @@ void setup()
 	radio->debugEnable(DEBUG > 0);
 	delay(100);
 
-	radio->setBand(FIX_BAND);
-	radio->setFrequency(FIX_STATION);
-
-	radio->setVolume(2);
-	radio->setMono(false);
-	radio->setMute(false);
+	state->init();	
 	logger->println("Radio services started");
-	// updateState(_radio);
-	logger->println("Initialization finished");
 
 	tftdisplay->init();
 
