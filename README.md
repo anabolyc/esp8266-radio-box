@@ -69,6 +69,14 @@ and change to your device IP. So app is hosted on your PC now, but will talk to 
 
 Design files can be found in [hardware](/hardware) section.
 
+## Kit contents 
+
+![image](https://user-images.githubusercontent.com/5459747/214706761-bfee4459-158b-4ade-a417-f8f5f57f95f4.png)
+
+## Assemble instructions
+
+Please check on the [project page](https://hackaday.io/project/189326-space-invaders-radio-diy-kit)
+
 ## Look
 
 ### Revision D
