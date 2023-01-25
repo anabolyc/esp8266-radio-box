@@ -31,7 +31,6 @@ jobs:
         python -m pip install --upgrade pip
         pip install --upgrade platformio
     
-    - name: Run PlatformIO
-      working-directory: .
+    - name: Build esp8266-radio-box
+      working-directory: ./firmware/esp8266-radio-box
       run: pio run
-      

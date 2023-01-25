@@ -1,0 +1,3 @@
+[submodule "firmware/esp-space-invaders"]
+	path = firmware/esp-space-invaders
+	url = https://github.com/anabolyc/esp-space-invaders
