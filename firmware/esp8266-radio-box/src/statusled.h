@@ -1,7 +1,11 @@
 #pragma once
 
 #include <Ticker.h>
+#if (PIN_LED_TYPE==0)
 #include <FastLED.h>
+#else
+#include <Arduino.h>
+#endif
 
 #define LED_STATUSES_COUNT 4
 #define LED_STATUSES_STATES_COUNT 2
@@ -11,9 +15,6 @@ enum ApplicationState {
     NOT_READY,          // 0
     READY,              // 1
     CLIENT_CONNECTED,   // 2
-    // CLIENT_RX,          // 3
-    // CLIENT_TX,          // 4
-    // ERROR               // 5
     UNDEFINED
 };
 

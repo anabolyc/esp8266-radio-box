@@ -30,7 +30,7 @@ const int WM_POWER     = 8;
 struct WsMessageType {
     int id;
     String value;
-} ;
+};
 
 static WsMessageType messageDefs[] = {
 	{WM_VOLUME, "volume"},

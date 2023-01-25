@@ -29,6 +29,8 @@ RadioState::RadioState(RadioCapabilities caps, Radio * svc) {
         });
     }
 
+    _state = new SavedState();
+
     _ticker = new Ticker();
     _ticker->attach_ms(REFRESH_STATE_PERIOD_MS, [&]() {
         // ??this->power = radio->getMute();
@@ -37,6 +39,18 @@ RadioState::RadioState(RadioCapabilities caps, Radio * svc) {
         this->band = radio->getBand();
         this->freq = radio->getFrequency();
         this->bassBoost = radio->getBassBoost();
+
+        if ((stateObject.volume != this->volume) || (stateObject.mono != this->mono) || (stateObject.band != this->band) || (stateObject.bassBoost != this->bassBoost) || (stateObject.freq != freq))
+        {
+            stateObject.volume = this->volume;
+            stateObject.mono = this->mono;
+            stateObject.band = this->band;
+            stateObject.bassBoost = this->bassBoost;
+            stateObject.freq = freq;
+
+            _state->save(&stateObject);
+        }
+
         #if (DEBUG > 1)
         {
             RADIO_INFO info;
@@ -68,6 +82,27 @@ RadioState::RadioState(RadioCapabilities caps, Radio * svc) {
         }
         #endif
     });
+}
+
+void RadioState::init() {
+if (_state->isValid()){
+        _state->load(&stateObject);
+
+        radio->setBand(stateObject.band);
+        radio->setFrequency(stateObject.freq);
+
+        radio->setVolume(stateObject.volume);
+        radio->setMono(stateObject.mono);
+        radio->setMute(stateObject.bassBoost);
+    } else {
+        logger->print("State object is not found, loading defaults");
+        radio->setBand(FIX_BAND);
+        radio->setFrequency(FIX_STATION);
+
+        radio->setVolume(2);
+        radio->setMono(false);
+        radio->setMute(false);
+    }
 }
 
 void RadioState::setPower(bool value) {
