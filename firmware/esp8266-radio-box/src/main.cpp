@@ -1,9 +1,15 @@
 #include <Arduino.h>
-#include <WiFiManager.h>
 #include <TFT_eSPI.h>
 #include <Ticker.h>
 
+#if defined(WIFI_SSID) && defined(WIFI_PASS)
+#define WIFI_STATIC
+#else
+#include <FS.h>
+using namespace fs;
+#include <WiFiManager.h>
 WiFiManager wifiManager;
+#endif
 
 #if defined(PIN_LED)
 #include "statusled.h"
@@ -45,28 +51,39 @@ void startWifi()
 	logger->printf("Setting hostname to %s\n", ssid.c_str());
 	WiFi.hostname(ssid);
 
+#ifdef WIFI_STATIC
+	uint8_t cnt = 0;
+	WiFi.mode(WIFI_STA);
+	WiFi.begin(WIFI_SSID, WIFI_PASS);
+	while (WiFi.status() != WL_CONNECTED)
+	{
+		delay(500);
+		Serial.print(".");
+		cnt++;
+		if (cnt > 20)
+			break;
+	}
+
+	if (WiFi.status() != WL_CONNECTED)
+		ESP.restart();
+#else
 	wifiManager.setConfigPortalBlocking(false);
-    wifiManager.setConfigPortalTimeout(60);
-	// wifiTicker->attach(1, [&](){
-	// 	logger->println("tick");
-		if (!wifiManager.autoConnect())
-		{
-			logger->println("Failed to connect and hit timeout");
-			#ifndef NO_WIFI_WAIT
-			ESP.restart();
-			#endif
-		}
-		else
-		{
-			logger->printf("Connected: ");
-			logger->println(WiFi.localIP());
-			server->init();
-			#ifdef ENABLE_LED
-			statusLed->setState(ApplicationState::READY);
-			#endif
-			// wifiTicker->detach();
-		}
-	// });
+	wifiManager.setConfigPortalTimeout(60);
+	if (!wifiManager.autoConnect())
+	{
+		logger->println("Failed to connect and hit timeout");
+#ifndef NO_WIFI_WAIT
+		ESP.restart();
+#endif
+	}
+#endif
+
+	logger->printf("Connected: ");
+	logger->println(WiFi.localIP());
+	server->init();
+#ifdef ENABLE_LED
+	statusLed->setState(ApplicationState::READY);
+#endif
 }
 
 void setup()
@@ -78,7 +95,7 @@ void setup()
 	radio->debugEnable(DEBUG > 0);
 	delay(100);
 
-	state->init();	
+	state->init();
 	logger->println("Radio services started");
 
 	tftdisplay->init();
@@ -88,35 +105,35 @@ void setup()
 	pinMode(PIN_BTN_M, INPUT);
 	pinMode(PIN_BTN_R, INPUT);
 
-	btn_l->attachClick([](){
+	btn_l->attachClick([]()
+					   {
         Serial.println("Button L clicked");
 		if (state->volume > 1)
         	radio->setVolume(state->volume - 1);
 		else 
-			radio->setMute(true);
-	});
+			radio->setMute(true); });
 
-	btn_l->attachLongPressStart([](){
+	btn_l->attachLongPressStart([]()
+								{
         Serial.println("Button L long press");
-        radio->seekDown();
-    });
+        radio->seekDown(); });
 
-    btn_m->attachClick([](){
+	btn_m->attachClick([]()
+					   {
         Serial.println("Button M clicked");
-        radio->setMono(!radio->getMono());
-    });
+        radio->setMono(!radio->getMono()); });
 
-    btn_r->attachClick([](){
+	btn_r->attachClick([]()
+					   {
         Serial.println("Button R clicked");
 		if (radio->getMute())
 			 radio->setMute(false);
-        radio->setVolume(state->volume + 1);
-    });
+        radio->setVolume(state->volume + 1); });
 
-	btn_r->attachLongPressStart([](){
+	btn_r->attachLongPressStart([]()
+								{
         Serial.println("Button R long press");
-        radio->seekUp();
-    });
+        radio->seekUp(); });
 #endif
 
 	startWifi();
@@ -128,8 +145,8 @@ void loop()
 
 #ifdef ENABLE_BUTTONS
 	btn_l->tick();
-    btn_m->tick();
-    btn_r->tick();
+	btn_m->tick();
+	btn_r->tick();
 #endif
 }
 

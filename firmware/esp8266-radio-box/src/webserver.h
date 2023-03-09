@@ -1,8 +1,10 @@
 #pragma once
 
+#include <FS.h>
+using namespace fs;
+
 #include <ESP8266WebServer.h>
 #include <WebSocketsServer.h>
-#include <FS.h>
 #include <Ticker.h>
 
 #include "radiostate.h"
