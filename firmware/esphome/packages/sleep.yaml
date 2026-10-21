@@ -1,0 +1,137 @@
+# ============================================================
+# Power saving after a period without button presses
+# ============================================================
+# - Display off after ${display_off_after} without a button press; the
+#   device stays connected. Any button turns it back on, and the button's
+#   action runs as usual.
+# - Deep sleep after ${sleep_after} without a button press. Left, middle
+#   or right button wakes it up (full reboot); the press that wakes it
+#   does nothing else.
+# - The display reset/backlight pin is held low during sleep.
+# - "Display Sleep Enabled" switch in Home Assistant keeps the display on.
+# - "Sleep Enabled" switch in Home Assistant turns sleeping off, e.g. for
+#   OTA updates and log viewing.
+#
+# Requires:
+#   - packages/gpio.yaml (button binary sensors, pins with allow_other_uses)
+#   - packages/sendspin-addon-display.yaml (display_power_switch)
+#   - substitutions left_button, middle_button, right_button, display_reset_pin
+# ============================================================
+
+# Override in the device config substitutions
+substitutions:
+  display_off_after: 60s
+  sleep_after: 5min
+
+esphome:
+  includes:
+    - packages/remote_sleep.h
+  on_boot:
+    # Before the display is set up: release pins held through deep sleep
+    - priority: 1000
+      then:
+        - lambda: |-
+            remote_sleep::release({(gpio_num_t) ${ display_reset_pin | replace("GPIO", "") }, (gpio_num_t) ${ middle_button | replace("GPIO", "") }});
+    - priority: -100
+      then:
+        - script.execute: restart_power_timers
+
+# The boot counts as good well before the first sleep can happen
+safe_mode:
+  boot_is_good_after: 20s
+
+deep_sleep:
+  id: deep_sleep_control
+  # Middle button is active-low: single pin (ext0) wakeup
+  wakeup_pin:
+    number: ${middle_button}
+    allow_other_uses: true
+    inverted: true
+    mode:
+      input: true
+      pullup: true
+  # Left and right buttons are active-high: multi pin (ext1) wakeup
+  esp32_ext1_wakeup:
+    mode: ANY_HIGH
+    pins:
+      - number: ${left_button}
+        allow_other_uses: true
+      - number: ${right_button}
+        allow_other_uses: true
+
+switch:
+  - platform: template
+    id: display_sleep_enabled
+    name: "Display Sleep Enabled"
+    icon: mdi:monitor-off
+    entity_category: config
+    optimistic: true
+    restore_mode: RESTORE_DEFAULT_ON
+    on_turn_on:
+      - script.execute: display_timer
+    on_turn_off:
+      - script.stop: display_timer
+
+  - platform: template
+    id: sleep_enabled
+    name: "Sleep Enabled"
+    icon: mdi:sleep
+    entity_category: config
+    optimistic: true
+    restore_mode: RESTORE_DEFAULT_ON
+    on_turn_on:
+      - script.execute: sleep_timer
+    on_turn_off:
+      - script.stop: sleep_timer
+
+script:
+  # Called on boot and on every button press
+  - id: restart_power_timers
+    then:
+      - if:
+          condition:
+            switch.is_off: display_power_switch
+          then:
+            - switch.turn_on: display_power_switch
+      - script.execute: display_timer
+      - script.execute: sleep_timer
+
+  - id: display_timer
+    mode: restart
+    then:
+      - delay: ${display_off_after}
+      - if:
+          condition:
+            switch.is_on: display_sleep_enabled
+          then:
+            - logger.log: "No button pressed for ${display_off_after}, turning the display off"
+            - switch.turn_off: display_power_switch
+
+  - id: sleep_timer
+    mode: restart
+    then:
+      - delay: ${sleep_after}
+      - if:
+          condition:
+            switch.is_on: sleep_enabled
+          then:
+            - logger.log: "No button pressed for ${sleep_after}, going to sleep"
+            - lambda: |-
+                remote_sleep::prepare((gpio_num_t) ${ display_reset_pin | replace("GPIO", "") },
+                                      {(gpio_num_t) ${ left_button | replace("GPIO", "") }, (gpio_num_t) ${ right_button | replace("GPIO", "") }});
+            - deep_sleep.enter: deep_sleep_control
+
+# Any button press turns the display on and restarts both timers
+binary_sensor:
+  - id: !extend left_button_sensor
+    on_press:
+      - script.execute: restart_power_timers
+  - id: !extend middle_button_sensor
+    on_press:
+      - script.execute: restart_power_timers
+  - id: !extend right_button_sensor
+    on_press:
+      - script.execute: restart_power_timers
+  - id: !extend side_button_sensor
+    on_press:
+      - script.execute: restart_power_timers

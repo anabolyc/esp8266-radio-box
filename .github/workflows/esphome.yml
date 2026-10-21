@@ -1,0 +1,87 @@
+name: ESPHome CI
+
+on:
+  push:
+    branches: [ master ]
+    paths:
+      - 'firmware/esphome/**'
+      - '.github/workflows/esphome.yml'
+  pull_request:
+    paths:
+      - 'firmware/esphome/**'
+      - '.github/workflows/esphome.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        device:
+          - sendspin-remote-01
+          - sendspin-remote-02
+          - remote-01-light
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.12'
+
+    - name: Install ESPHome
+      id: esphome
+      run: |
+        python -m pip install --upgrade pip
+        pip install --upgrade esphome
+        echo "version=$(esphome version | cut -d' ' -f2)" >> "$GITHUB_OUTPUT"
+
+    # secrets.yaml is not in the repository: the build only needs Wi-Fi
+    # credentials to pass validation, never to connect.
+    - name: Write placeholder secrets
+      working-directory: ./firmware/esphome
+      run: |
+        cat > secrets.yaml <<'SECRETS'
+        wifi_ssid: "ci-build"
+        wifi_password: "ci-build-placeholder"
+        SECRETS
+
+    # ESP-IDF and its toolchains, downloaded on the first build of an
+    # ESPHome version and shared by both devices
+    - name: Cache ESP-IDF toolchains
+      uses: actions/cache@v4
+      with:
+        path: firmware/esphome/.esphome/.espressif
+        key: ${{ runner.os }}-espressif-esphome-${{ steps.esphome.outputs.version }}
+        restore-keys: |
+          ${{ runner.os }}-espressif-esphome-
+
+    # Compiled objects of this device, for an incremental build
+    - name: Cache build directory
+      uses: actions/cache@v4
+      with:
+        path: firmware/esphome/.esphome/build/${{ matrix.device }}
+        key: ${{ runner.os }}-esphome-build-${{ matrix.device }}-${{ steps.esphome.outputs.version }}-${{ github.sha }}
+        restore-keys: |
+          ${{ runner.os }}-esphome-build-${{ matrix.device }}-${{ steps.esphome.outputs.version }}-
+
+    - name: Build ${{ matrix.device }}
+      working-directory: ./firmware/esphome
+      run: esphome compile ${{ matrix.device }}.yaml
+
+    - name: Upload firmware
+      uses: actions/upload-artifact@v4
+      with:
+        name: ${{ matrix.device }}-firmware
+        path: |
+          firmware/esphome/.esphome/build/${{ matrix.device }}/build/firmware.factory.bin
+          firmware/esphome/.esphome/build/${{ matrix.device }}/build/firmware.ota.bin
+        if-no-files-found: error

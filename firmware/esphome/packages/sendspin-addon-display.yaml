@@ -1,0 +1,827 @@
+# ============================================================
+# Sendspin display: splash while connecting; clock when idle; cover
+# art, top bar (status, clock, volume) and track info while playing.
+# Uses LVGL on a 240x240 display.
+# ============================================================
+# Requires:
+#   - display s3_box_lcd (packages/display-tft.yaml)
+#   - sendspin_hub, sendspin_group_media_player
+#     (packages/sendspin-screen-only.yaml)
+#   - browse_active global (packages/sendspin-addon-buttons.yaml)
+# ============================================================
+
+defaults:
+  font_family: Roboto
+  font_glyphsets: "GF_Latin_Core"
+
+substitutions:
+  mdi_pause_glyph: "\U000F03E4"
+  mdi_play_glyph: "\U000F040A"
+  mdi_stop_glyph: "\U000F04DB"
+  mdi_volume_off_glyph: "\U000F0581"
+  mdi_volume_low_glyph: "\U000F057F"
+  mdi_volume_medium_glyph: "\U000F0580"
+  mdi_volume_high_glyph: "\U000F057E"
+  mdi_wifi_glyph: "\U000F05A9"
+  mdi_music_note_glyph: "\U000F0387"
+  mdi_home_assistant_glyph: "\U000F07D0"
+  mdi_timer_sand_glyph: "\U000F051F"
+
+  # Hide the loading overlay if playback has not started by then
+  loading_timeout: 15s
+  # How long the volume overlay stays after the last volume button press
+  volume_overlay_time: 1500ms
+
+  # Cross-fade duration between old and new cover art
+  cover_art_fade_time: 400
+
+  # Memory-dependent settings; the defaults suit a board without PSRAM.
+  # Override them in the device config on a board with PSRAM.
+  #
+  # Cover art is requested from the server at this square size (px) and upscaled by
+  # LVGL to fill the 240px screen. Two RGB565 frames of this size (size*size*2 bytes
+  # each) plus the JPEG decoder must fit in heap: keep it low without PSRAM,
+  # 240 (native, no scaling) with PSRAM.
+  cover_art_size: 60
+  cover_art_scale: ${ 240 / cover_art_size }
+  # LVGL draw buffer, as a share of the screen (5% of 240x240 RGB565 = 5.8 KB)
+  lvgl_buffer_size: 5%
+
+esphome:
+  includes:
+    - packages/display_power.h
+    - packages/artwork_prealloc.h
+  on_boot:
+    # Before the display is set up: keep its init sequence for turning it back on.
+    # Before anything fragments the heap: create the artwork JPEG decoder (~20 KB),
+    # which otherwise may fail to allocate when the first cover art arrives.
+    - priority: 1000
+      then:
+        - lambda: |-
+            display_power::save_init_sequence(id(s3_box_lcd));
+            artwork_prealloc::create_decoder(id(cover_art_slot), runtime_image::ImageFormat::JPEG);
+    - then:
+        # Track the Sendspin connection for the splash screen
+        - lambda: |-
+            id(sendspin_hub)->add_controller_state_callback(
+                [](const sendspin::ServerStateControllerObject &) { id(sendspin_connected) = true; });
+            id(sendspin_hub)->add_controller_state_clear_callback([]() { id(sendspin_connected) = false; });
+
+switch:
+  # Display on/off. Off holds the panel in reset, which also turns the backlight off
+  # (they share a pin); on re-initialises the panel and redraws the screen.
+  - platform: template
+    id: display_power_switch
+    name: "Display"
+    icon: mdi:monitor
+    optimistic: true
+    restore_mode: ALWAYS_ON
+    on_turn_off:
+      - lvgl.pause:
+      - lambda: display_power::turn_off(id(s3_box_lcd));
+      - globals.set:
+          id: display_off
+          value: 'true'
+    on_turn_on:
+      # Also fires when the state is restored at boot, when there is nothing to undo
+      - if:
+          condition:
+            lambda: return id(display_off);
+          then:
+            - lambda: display_power::turn_on(id(s3_box_lcd));
+            - globals.set:
+                id: display_off
+                value: 'false'
+            - lvgl.resume:
+            - lvgl.widget.redraw:
+
+globals:
+  - id: display_off
+    type: bool
+    restore_value: no
+    initial_value: 'false'
+  - id: sendspin_connected
+    type: bool
+    restore_value: no
+    initial_value: 'false'
+  - id: splash_active
+    type: bool
+    restore_value: no
+    initial_value: 'true'
+
+# Page changes are instant: animating over the scaled cover art is too slow here
+media_player:
+  - id: !extend sendspin_group_media_player
+
+    # Fires on playback state, volume and mute changes
+    on_state:
+      - script.execute: update_top_bar
+      - script.execute: volume_overlay_update
+
+    on_play:
+      - script.execute: loading_hide
+      # The splash screen is left by update_splash only
+      - if:
+          condition:
+            lvgl.page.is_showing: idle_page
+          then:
+            - lvgl.page.show: sendspin_page
+    on_idle:
+      # Only leave the playback page; the splash screen decides by itself
+      - if:
+          condition:
+            lvgl.page.is_showing: sendspin_page
+          then:
+            - lvgl.page.show: idle_page
+
+text_sensor:
+  - platform: sendspin
+    id: track_title
+    type: title
+    on_value:
+      # A new title also means a newly requested stream is playing
+      - script.execute: loading_hide
+      - component.update: now_playing_text
+  - platform: sendspin
+    id: track_artist
+    type: artist
+    on_value:
+      - component.update: now_playing_text
+  - platform: template
+    id: now_playing_text
+    lambda: |-
+      std::string playing_text = id(track_title).get_state();
+      if (!id(track_artist).get_state().empty()) {
+        if (!playing_text.empty()) {
+          playing_text += " - ";
+        }
+        playing_text += id(track_artist).get_state();
+      }
+      return playing_text;
+    on_value:
+      - lvgl.label.update:
+          id: now_playing_label
+          text: !lambda return x;
+    update_interval: never
+
+sensor:
+  - platform: sendspin
+    type: track_duration
+    id: ss_track_duration
+    on_value:
+      - lvgl.label.update:
+          id: track_duration_label
+          text: !lambda |-
+            if (std::isnan(x) || x <= 0) return std::string("");
+            int s = (int) (x / 1000.0f);  // sensor reports milliseconds
+            char buf[12];
+            snprintf(buf, sizeof(buf), "%d:%02d", s / 60, s % 60);
+            return std::string(buf);
+
+  - platform: sendspin
+    type: track_progress
+    id: ss_track_progress
+    on_value:
+      - lvgl.label.update:
+          id: track_progress_label
+          text: !lambda |-
+            if (std::isnan(x) || x < 0) return std::string("");
+            int s = (int) (x / 1000.0f);  // sensor reports milliseconds
+            char buf[12];
+            snprintf(buf, sizeof(buf), "%d:%02d", s / 60, s % 60);
+            return std::string(buf);
+      - lvgl.bar.update:
+          id: track_progress_bar
+          value: !lambda |-
+            float d = id(ss_track_duration).state;
+            if (std::isnan(x) || std::isnan(d) || d <= 0) return 0;
+            return (int) std::min(1000.0f, x * 1000.0f / d);
+
+# SNTP has the time about a second after WiFi is up; Home Assistant time only
+# once the API has reconnected, which can take 10+ seconds after a wake-up
+time:
+  - platform: sntp
+    id: sntp_time
+
+interval:
+  - interval: 0.5s
+    then:
+      - script.execute: update_splash
+  - interval: 0.5s
+    then:
+      - lambda: |-
+          auto now = id(sntp_time).now();
+          if (!now.is_valid()) return;
+
+          // Update hours
+          char hours_buf[8];
+          snprintf(hours_buf, sizeof(hours_buf), "%d", now.hour);
+          lv_label_set_text(id(clock_hours_label), hours_buf);
+
+          // Update minutes
+          char minutes_buf[8];
+          snprintf(minutes_buf, sizeof(minutes_buf), "%02d", now.minute);
+          lv_label_set_text(id(clock_minutes_label), minutes_buf);
+
+          // Update flashing separator (toggles every second)
+          lv_label_set_text(id(clock_separator_label), now.second % 2 == 0 ? "." : " ");
+
+          // Rainbow color cycling based on current timestamp
+          auto colorFunc = [](int seq) -> int {
+            seq = seq % 0xff;
+            if (seq < 85)
+              return seq * 3;
+            else if (seq < 170)
+              return 255 - (seq - 85) * 3;
+            return 0;
+          };
+          auto seq = now.timestamp;
+          auto textColor = lv_color_make(colorFunc(seq), colorFunc(seq + 85), colorFunc(seq + 170));
+
+          lv_obj_set_style_text_color(id(clock_hours_label), textColor, 0);
+          lv_obj_set_style_text_color(id(clock_separator_label), textColor, 0);
+          lv_obj_set_style_text_color(id(clock_minutes_label), textColor, 0);
+
+          // Top bar clock on the playback page. Only touch it when the minute
+          // changes: every redraw re-scales the cover art underneath.
+          static int last_minute = -1;
+          if (now.minute != last_minute) {
+            last_minute = now.minute;
+            char top_buf[8];
+            snprintf(top_buf, sizeof(top_buf), "%02d:%02d", now.hour, now.minute);
+            lv_label_set_text(id(top_bar_clock_label), top_buf);
+          }
+
+font:
+  # For the clock page
+  - file:
+      type: gfonts
+      family: ${font_family}
+      weight: regular
+    id: text_big
+    size: 96
+    glyphs: ['.', ' ', ':', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9']
+
+  # Use a mono font to make track progress colon in the same position as it increments
+  - file:
+      type: gfonts
+      family: Roboto Mono
+      weight: 400
+    id: font_time
+    size: 14
+    glyphs: [' ', ':', '%', '/', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9']
+
+  - file:
+      type: gfonts
+      family: ${font_family}
+      weight: 300
+    id: font_display
+    size: 20
+    glyphsets:
+      - ${font_glyphsets}
+
+  # Large Material Design Icons for the splash screen
+  - file: https://github.com/Templarian/MaterialDesign-Webfont/raw/refs/heads/master/fonts/materialdesignicons-webfont.ttf
+    id: font_mdi_large
+    size: 96
+    glyphs: [
+      "${mdi_wifi_glyph}",
+      "${mdi_home_assistant_glyph}",
+      "${mdi_music_note_glyph}",
+    ]
+
+  # Medium Material Design Icons for the loading overlay. Not the 96px font:
+  # LVGL renders a glyph through a buffer of its size, and the overlay shows
+  # exactly when playback start leaves the least heap.
+  - file: https://github.com/Templarian/MaterialDesign-Webfont/raw/refs/heads/master/fonts/materialdesignicons-webfont.ttf
+    id: font_mdi_medium
+    size: 48
+    glyphs: [
+      "${mdi_timer_sand_glyph}",
+    ]
+
+  # Small Material Design Icons for the playback page top bar
+  - file: https://github.com/Templarian/MaterialDesign-Webfont/raw/refs/heads/master/fonts/materialdesignicons-webfont.ttf
+    id: font_mdi_small
+    size: 18
+    glyphs: [
+      "${mdi_pause_glyph}",
+      "${mdi_play_glyph}",
+      "${mdi_stop_glyph}",
+      "${mdi_volume_off_glyph}",
+      "${mdi_volume_low_glyph}",
+      "${mdi_volume_medium_glyph}",
+      "${mdi_volume_high_glyph}",
+    ]
+
+image:
+  # LVGL 9 can only scale RGB565 images when LV_DRAW_SW_SUPPORT_RGB565A8 is enabled,
+  # which ESPHome only does if an RGB565 image with alpha is used in LVGL. This
+  # 1x1 image (shown by a hidden widget) turns it on at no real cost.
+  - platform: file
+    file: mdi:circle
+    id: lv_rgb565a8_enabler
+    type: RGB565
+    transparency: alpha_channel
+    resize: 1x1
+
+  # Sendspin artwork slot. It owns two frame buffers: `current_image` shows the
+  # newest artwork, `transition_image` keeps the outgoing one until
+  # `sendspin.image.transition_finished` is called, which allows cross-fading.
+  - platform: sendspin
+    id: cover_art_slot
+    source: ALBUM
+    format: JPEG
+    type: RGB565
+    resize: ${cover_art_size}x${cover_art_size}
+    current_image:
+      id: cover_art
+    transition_image:
+      id: cover_art_prev
+    on_image_display:
+      - script.execute: loading_hide
+      - lvgl.widget.show: [album_art_prev_widget, album_art_widget]
+      # Views don't invalidate LVGL widgets; the source must be set again on every display
+      - lvgl.image.update:
+          id: album_art_prev_widget
+          src: cover_art_prev
+      - lvgl.image.update:
+          id: album_art_widget
+          src: cover_art
+          image_opa: TRANSP
+      - if:
+          condition:
+            lvgl.page.is_showing: sendspin_page
+          then:
+            # Fade the new artwork in over the outgoing one
+            - lambda: |-
+                lv_anim_t a;
+                lv_anim_init(&a);
+                lv_anim_set_var(&a, id(album_art_widget));
+                lv_anim_set_values(&a, LV_OPA_TRANSP, LV_OPA_COVER);
+                lv_anim_set_duration(&a, ${cover_art_fade_time});
+                lv_anim_set_exec_cb(&a, [](void *obj, int32_t v) {
+                  lv_obj_set_style_image_opa((lv_obj_t *) obj, v, 0);
+                });
+                lv_anim_start(&a);
+            - delay: ${cover_art_fade_time}ms
+          else:
+            - lvgl.image.update:
+                id: album_art_widget
+                image_opa: COVER
+      # Releases the outgoing frame so the next artwork can be decoded into it
+      - sendspin.image.transition_finished: cover_art_slot
+    on_image_clear:
+      - lvgl.widget.hide: [album_art_prev_widget, album_art_widget]
+    on_image_error:
+      - logger.log:
+          level: WARN
+          format: "Failed to decode cover art image"
+
+script:
+  # Default page: splash while connecting, else the player or the clock.
+  # Used by the browse page (packages/browse.yaml) to go back.
+  - id: ui_show_home
+    then:
+      - if:
+          condition:
+            lambda: return id(splash_active);
+          then:
+            - lvgl.page.show: splash_page
+          else:
+            - if:
+                condition:
+                  media_player.is_playing: sendspin_group_media_player
+                then:
+                  - lvgl.page.show: sendspin_page
+                else:
+                  - lvgl.page.show: idle_page
+
+  # Loading overlay: shown when playback is requested, hidden once the player
+  # reports playing (on_play), a new title or cover arrives (switching stations
+  # while playing), or after ${loading_timeout}
+  - id: loading_show
+    mode: restart
+    then:
+      - lvgl.widget.show: loading_overlay
+      - delay: ${loading_timeout}
+      - lvgl.widget.hide: loading_overlay
+
+  - id: loading_hide
+    then:
+      - script.stop: loading_show
+      - lvgl.widget.hide: loading_overlay
+
+  # Splash screen while connecting: WiFi, then Home Assistant, then Music
+  # Assistant (and the clock time, unless something is already playing).
+  # Leaves once ready.
+  - id: update_splash
+    then:
+      - if:
+          condition:
+            not:
+              wifi.connected:
+          then:
+            - script.execute:
+                id: show_splash
+                glyph: "${mdi_wifi_glyph}"
+                message: "Connecting to Wi-Fi"
+          else:
+            - if:
+                condition:
+                  not:
+                    api.connected:
+                then:
+                  - script.execute:
+                      id: show_splash
+                      glyph: "${mdi_home_assistant_glyph}"
+                      message: "Connecting to Home Assistant"
+                else:
+                  - if:
+                      condition:
+                        lambda: |-
+                          if (!id(sendspin_connected))
+                            return true;
+                          return id(sendspin_group_media_player).state != media_player::MEDIA_PLAYER_STATE_PLAYING &&
+                                 !id(sntp_time).now().is_valid();
+                      then:
+                        - script.execute:
+                            id: show_splash
+                            glyph: "${mdi_music_note_glyph}"
+                            message: "Connecting to Music Assistant"
+                      else:
+                        # Leave once, without animation: fading in the scaled cover art
+                        # is slow enough to trip the task watchdog
+                        - if:
+                            condition:
+                              lambda: return id(splash_active);
+                            then:
+                              - globals.set:
+                                  id: splash_active
+                                  value: 'false'
+                              # Stay on the browse page if it is open
+                              - if:
+                                  condition:
+                                    lambda: return id(browse_active);
+                                  then:
+                                    - logger.log: "Connected"
+                                  else:
+                                    - if:
+                                        condition:
+                                          media_player.is_playing: sendspin_group_media_player
+                                        then:
+                                          - lvgl.page.show: sendspin_page
+                                        else:
+                                          - lvgl.page.show: idle_page
+
+  - id: show_splash
+    parameters:
+      glyph: std::string
+      message: std::string
+    then:
+      - if:
+          condition:
+            lambda: return glyph != lv_label_get_text(id(splash_icon));
+          then:
+            - lvgl.label.update:
+                id: splash_icon
+                text: !lambda return glyph;
+            - lvgl.label.update:
+                id: splash_message
+                text: !lambda return message;
+      - if:
+          condition:
+            lambda: return !id(splash_active);
+          then:
+            - globals.set:
+                id: splash_active
+                value: 'true'
+            # The browse page does not need the connection; leave it open
+            - if:
+                condition:
+                  lambda: return !id(browse_active);
+                then:
+                  - lvgl.page.show: splash_page
+
+  # Volume overlay: shown by the volume buttons. It shows the volume the player
+  # reports, so it follows once the server has applied the change.
+  - id: volume_overlay_show
+    mode: restart
+    then:
+      - script.execute: volume_overlay_update
+      - lvgl.widget.show: volume_overlay
+      - delay: ${volume_overlay_time}
+      - lvgl.widget.hide: volume_overlay
+
+  - id: volume_overlay_update
+    then:
+      - lvgl.arc.update:
+          id: volume_arc
+          value: !lambda |-
+            auto *mp = id(sendspin_group_media_player);
+            return mp->is_muted() ? 0 : (int) roundf(mp->volume * 100.0f);
+      - lvgl.label.update:
+          id: volume_overlay_label
+          text: !lambda |-
+            auto *mp = id(sendspin_group_media_player);
+            char buf[8];
+            snprintf(buf, sizeof(buf), "%d%%", mp->is_muted() ? 0 : (int) roundf(mp->volume * 100.0f));
+            return std::string(buf);
+      - lvgl.label.update:
+          id: volume_overlay_icon
+          text: !lambda |-
+            auto *mp = id(sendspin_group_media_player);
+            if (mp->is_muted() || mp->volume <= 0.0f) return std::string("${mdi_volume_off_glyph}");
+            if (mp->volume < 0.34f) return std::string("${mdi_volume_low_glyph}");
+            if (mp->volume < 0.67f) return std::string("${mdi_volume_medium_glyph}");
+            return std::string("${mdi_volume_high_glyph}");
+
+  - id: update_top_bar
+    then:
+      - lvgl.label.update:
+          id: top_bar_status_icon
+          text: !lambda |-
+            switch (id(sendspin_group_media_player)->state) {
+              case media_player::MEDIA_PLAYER_STATE_PLAYING: return std::string("${mdi_play_glyph}");
+              case media_player::MEDIA_PLAYER_STATE_PAUSED: return std::string("${mdi_pause_glyph}");
+              default: return std::string("${mdi_stop_glyph}");
+            }
+      - lvgl.label.update:
+          id: top_bar_volume_icon
+          text: !lambda |-
+            auto *mp = id(sendspin_group_media_player);
+            if (mp->is_muted() || mp->volume <= 0.0f) return std::string("${mdi_volume_off_glyph}");
+            if (mp->volume < 0.34f) return std::string("${mdi_volume_low_glyph}");
+            if (mp->volume < 0.67f) return std::string("${mdi_volume_medium_glyph}");
+            return std::string("${mdi_volume_high_glyph}");
+      - lvgl.label.update:
+          id: top_bar_volume_label
+          text: !lambda |-
+            auto *mp = id(sendspin_group_media_player);
+            char buf[8];
+            snprintf(buf, sizeof(buf), "%d%%", mp->is_muted() ? 0 : (int) roundf(mp->volume * 100.0f));
+            return std::string(buf);
+
+lvgl:
+  displays:
+    - s3_box_lcd
+  rotation: 180
+  buffer_size: ${lvgl_buffer_size}
+  color_depth: 16
+  bg_color: 0x000000
+  default_font: font_display
+  # Above every page
+  top_layer:
+    widgets:
+      - obj:
+          id: volume_overlay
+          align: CENTER
+          width: 140
+          height: 140
+          radius: 70
+          bg_color: 0x000000
+          bg_opa: 70%
+          border_width: 0
+          pad_all: 0
+          scrollable: false
+          clickable: false
+          hidden: true
+          widgets:
+            - arc:
+                id: volume_arc
+                align: CENTER
+                width: 120
+                height: 120
+                min_value: 0
+                max_value: 100
+                value: 0
+                clickable: false
+                arc_color: 0x404040
+                arc_width: 10
+                indicator:
+                  arc_color: 0xFFFFFF
+                  arc_width: 10
+                knob:
+                  bg_opa: TRANSP
+                  pad_all: 0
+            - label:
+                id: volume_overlay_label
+                align: CENTER
+                y: -6
+                text_color: 0xFFFFFF
+                text_font: font_display
+                text: ""
+            - label:
+                id: volume_overlay_icon
+                align: CENTER
+                y: 18
+                text_color: 0xAAAAAA
+                text_font: font_mdi_small
+                text: "${mdi_volume_high_glyph}"
+      - obj:
+          id: loading_overlay
+          align: CENTER
+          width: 80
+          height: 80
+          radius: 40
+          bg_color: 0x000000
+          bg_opa: 70%
+          border_width: 0
+          pad_all: 0
+          scrollable: false
+          clickable: false
+          hidden: true
+          widgets:
+            - label:
+                align: CENTER
+                text_color: 0xFFFFFF
+                text_font: font_mdi_medium
+                text: "${mdi_timer_sand_glyph}"
+  pages:
+    # First page: shown from boot until connected
+    - id: splash_page
+      bg_color: 0x000000
+      skip: true
+      widgets:
+        - label:
+            id: splash_icon
+            align: CENTER
+            y: -20
+            text_color: 0xFFFFFF
+            text_font: font_mdi_large
+            text: "${mdi_wifi_glyph}"
+        - label:
+            id: splash_message
+            align: CENTER
+            y: 60
+            width: 220
+            text_align: CENTER
+            text_color: 0xAAAAAA
+            text_font: font_display
+            text: "Connecting to Wi-Fi"
+
+    - id: idle_page
+      bg_color: 0x000000
+      skip: true
+      widgets:
+        # Clock display - large clock when audio is not playing
+        - label:
+            id: clock_hours_label
+            align: CENTER
+            x: -60
+            y: -10
+            text_color: 0xFFFFFF
+            text_font: text_big
+            text: "--"
+        - label:
+            id: clock_separator_label
+            align: CENTER
+            x: 0
+            y: -10
+            text_color: 0xFFFFFF
+            text_font: text_big
+            text: "."
+        - label:
+            id: clock_minutes_label
+            align: CENTER
+            x: 60
+            y: -10
+            text_color: 0xFFFFFF
+            text_font: text_big
+            text: "--"
+
+    - id: sendspin_page
+      bg_color: 0x000000
+      scrollbar_mode: "OFF"
+      widgets:
+        - image:
+            src: lv_rgb565a8_enabler
+            hidden: true
+        # Outgoing artwork sits underneath, new artwork fades in on top of it
+        - image:
+            id: album_art_prev_widget
+            align: CENTER
+            src: cover_art_prev
+            scale: ${cover_art_scale}
+            antialias: true
+            hidden: true
+            clickable: false
+        - image:
+            id: album_art_widget
+            align: CENTER
+            src: cover_art
+            scale: ${cover_art_scale}
+            antialias: true
+            hidden: true
+            clickable: false
+
+        # Top bar: playback status, clock, volume
+        - obj:
+            id: top_bar
+            align: TOP_MID
+            width: 240
+            height: 26
+            bg_color: 0x000000
+            bg_opa: 60%
+            border_width: 0
+            radius: 0
+            pad_all: 0
+            scrollbar_mode: "OFF"
+            scrollable: false
+            clickable: false
+            widgets:
+              - label:
+                  id: top_bar_status_icon
+                  align: LEFT_MID
+                  x: 6
+                  text_color: 0xFFFFFF
+                  text_font: font_mdi_small
+                  text: "${mdi_stop_glyph}"
+              - label:
+                  id: top_bar_clock_label
+                  align: CENTER
+                  text_color: 0xFFFFFF
+                  text_font: font_time
+                  text: "--:--"
+              # Icon + percentage, kept together as the text width changes
+              - obj:
+                  align: RIGHT_MID
+                  x: -6
+                  width: SIZE_CONTENT
+                  height: SIZE_CONTENT
+                  bg_opa: TRANSP
+                  border_width: 0
+                  pad_all: 0
+                  scrollable: false
+                  clickable: false
+                  layout:
+                    type: FLEX
+                    flex_flow: ROW
+                    flex_align_cross: CENTER
+                    pad_column: 2
+                  widgets:
+                    - label:
+                        id: top_bar_volume_icon
+                        text_color: 0xFFFFFF
+                        text_font: font_mdi_small
+                        text: "${mdi_volume_high_glyph}"
+                    - label:
+                        id: top_bar_volume_label
+                        text_color: 0xFFFFFF
+                        text_font: font_time
+                        text: ""
+
+        # Track info band over the bottom of the artwork
+        - obj:
+            id: track_info_container
+            align: BOTTOM_MID
+            width: 240
+            height: 56
+            bg_color: 0x000000
+            bg_opa: 60%
+            border_width: 0
+            radius: 0
+            pad_all: 0
+            scrollbar_mode: "OFF"
+            scrollable: false
+            clickable: false
+            widgets:
+              - label:
+                  id: now_playing_label
+                  align: TOP_MID
+                  y: 4
+                  width: 228
+                  text_align: CENTER
+                  text_color: 0xFFFFFF
+                  text_font: font_display
+                  text: ""
+                  long_mode: SCROLL_CIRCULAR
+              - label:
+                  id: track_progress_label
+                  align: BOTTOM_LEFT
+                  x: 6
+                  y: -4
+                  text_color: 0xAAAAAA
+                  text_font: font_time
+                  text: ""
+              - bar:
+                  id: track_progress_bar
+                  align: BOTTOM_MID
+                  y: -9
+                  width: 132
+                  height: 4
+                  min_value: 0
+                  max_value: 1000
+                  value: 0
+                  bg_color: 0x404040
+                  bg_opa: COVER
+                  indicator:
+                    bg_color: 0xFFFFFF
+              - label:
+                  id: track_duration_label
+                  align: BOTTOM_RIGHT
+                  x: -6
+                  y: -4
+                  text_color: 0xAAAAAA
+                  text_font: font_time
+                  text: ""

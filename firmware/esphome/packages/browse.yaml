@@ -1,0 +1,438 @@
+# ============================================================
+# Browse page: lists of things to play or trigger
+# ============================================================
+# - Side button: cycle player -> lists -> other screens (browse::screens(),
+#   e.g. packages/lights.yaml) -> player
+# - Left / right: move selection up / down (immediately, on press)
+# - Middle: act on the selected item through Home Assistant, then go back
+#   to the player. What it does depends on the list (browse::Action):
+#   play a stream on sendspin_resume_entity, or trigger an automation.
+#
+# Content packages add lists at boot (packages/somafm-stations.yaml,
+# packages/ambient-scenes.yaml); the side button visits them in the
+# order the packages are included.
+#
+# The list is virtual: a few fixed rows are refilled as the selection
+# moves, so the item count does not cost LVGL memory.
+#
+# Requires:
+#   - packages/browse_list.h and at least one content package
+#   - a UI package: packages/sendspin-addon-display.yaml with
+#     packages/sendspin-addon-buttons.yaml, or packages/ui-light.yaml.
+#     It provides the LVGL setup, fonts (font_display, font_time), the
+#     lv_rgb565a8_enabler image, the browse_active global and the
+#     ui_show_home and loading_show scripts.
+#   - substitution sendspin_resume_entity
+# ============================================================
+
+esphome:
+  includes:
+    - packages/browse_list.h
+
+script:
+  # Side button: open the next list, then the next screen, or close after the last one
+  - id: browse_cycle
+    then:
+      - lambda: |-
+          const int lists = browse::lists().size();
+          const int screens = browse::screens().size();
+          int &list = browse::current();
+          int &screen = browse::current_screen();
+          // Position in the cycle: lists first, then screens; -1 is the player
+          int pos = list >= 0 ? list : (screen >= 0 ? lists + screen : -1);
+          if (screen >= 0 && browse::screens()[screen].hide)
+            browse::screens()[screen].hide();
+          pos++;
+          list = pos < lists ? pos : -1;
+          screen = pos >= lists && pos < lists + screens ? pos - lists : -1;
+      - if:
+          condition:
+            lambda: return browse::current() >= 0;
+          then:
+            - globals.set:
+                id: browse_active
+                value: 'true'
+            - script.execute: browse_render
+            - lvgl.page.show: browse_page
+          else:
+            - if:
+                condition:
+                  lambda: return browse::current_screen() >= 0;
+                then:
+                  - globals.set:
+                      id: browse_active
+                      value: 'true'
+                  - lambda: browse::screens()[browse::current_screen()].show();
+                else:
+                  - script.execute: browse_close
+
+  - id: browse_close
+    then:
+      - lambda: |-
+          int &screen = browse::current_screen();
+          if (screen >= 0 && browse::screens()[screen].hide)
+            browse::screens()[screen].hide();
+          screen = -1;
+          browse::current() = -1;
+      - globals.set:
+          id: browse_active
+          value: 'false'
+      # Back to whatever the UI package shows by default
+      - script.execute: ui_show_home
+
+  - id: browse_move
+    parameters:
+      delta: int
+    then:
+      - lambda: |-
+          browse::List *list = browse::current_list();
+          if (list == nullptr || list->items.empty())
+            return;
+          const int n = list->items.size();
+          list->selected = (list->selected + delta + n) % n;
+      - script.execute: browse_render
+
+  - id: browse_select
+    then:
+      - if:
+          condition:
+            lambda: return browse::selected_item() != nullptr;
+          then:
+            - logger.log:
+                format: "Selected %s"
+                args: ['browse::selected_item()->title']
+            - if:
+                condition:
+                  lambda: return browse::current_list()->action == browse::Action::PLAY_MEDIA;
+                then:
+                  - script.execute: loading_show
+                  - homeassistant.action:
+                      action: media_player.play_media
+                      data:
+                        entity_id: ${sendspin_resume_entity}
+                        media_content_type: music
+                        media_content_id: !lambda return browse::selected_item()->target;
+                      on_success:
+                        - logger.log: "Home Assistant started playback"
+                      on_error:
+                        - logger.log:
+                            level: WARN
+                            format: "Home Assistant could not start playback: %s"
+                            args: [error.c_str()]
+                else:
+                  - homeassistant.action:
+                      action: automation.trigger
+                      data:
+                        entity_id: !lambda return browse::selected_item()->target;
+                      on_success:
+                        - logger.log: "Home Assistant triggered the automation"
+                      on_error:
+                        - logger.log:
+                            level: WARN
+                            format: "Home Assistant could not trigger the automation: %s"
+                            args: [error.c_str()]
+            - script.execute: browse_close
+
+  # Fill the fixed rows around the selected item of the open list
+  - id: browse_render
+    then:
+      - lambda: |-
+          static constexpr int ROWS = 5;
+          browse::List *list = browse::current_list();
+          if (list == nullptr)
+            return;
+          auto &items = list->items;
+          const int n = items.size();
+          if (list->selected >= n)
+            list->selected = 0;
+          const int sel = list->selected;
+          const int start = std::max(0, std::min(sel - ROWS / 2, n - ROWS));
+
+          lv_obj_t *rows[ROWS] = {id(browse_row_0), id(browse_row_1), id(browse_row_2), id(browse_row_3), id(browse_row_4)};
+          lv_obj_t *icons[ROWS] = {id(browse_icon_0), id(browse_icon_1), id(browse_icon_2), id(browse_icon_3), id(browse_icon_4)};
+          lv_obj_t *glyphs[ROWS] = {id(browse_glyph_0), id(browse_glyph_1), id(browse_glyph_2), id(browse_glyph_3), id(browse_glyph_4)};
+          lv_obj_t *labels[ROWS] = {id(browse_label_0), id(browse_label_1), id(browse_label_2), id(browse_label_3), id(browse_label_4)};
+
+          for (int i = 0; i < ROWS; i++) {
+            const int idx = start + i;
+            if (idx >= n) {
+              lv_obj_add_flag(rows[i], LV_OBJ_FLAG_HIDDEN);
+              continue;
+            }
+            const browse::Item &item = items[idx];
+            lv_obj_remove_flag(rows[i], LV_OBJ_FLAG_HIDDEN);
+            lv_label_set_text(labels[i], item.title);
+            if (item.icon != nullptr) {
+              lv_image_set_src(icons[i], item.icon->get_lv_image_dsc());
+              lv_obj_remove_flag(icons[i], LV_OBJ_FLAG_HIDDEN);
+              lv_obj_add_flag(glyphs[i], LV_OBJ_FLAG_HIDDEN);
+            } else {
+              if (item.glyph_font != nullptr)
+                lv_obj_set_style_text_font(glyphs[i], item.glyph_font->get_lv_font(), 0);
+              lv_label_set_text(glyphs[i], item.glyph != nullptr ? item.glyph : "");
+              lv_obj_remove_flag(glyphs[i], LV_OBJ_FLAG_HIDDEN);
+              lv_obj_add_flag(icons[i], LV_OBJ_FLAG_HIDDEN);
+            }
+            lv_obj_set_style_bg_opa(rows[i], idx == sel ? LV_OPA_COVER : LV_OPA_TRANSP, 0);
+          }
+
+          lv_label_set_text(id(browse_title_label), list->title);
+          char pos[12];
+          snprintf(pos, sizeof(pos), "%d/%d", n == 0 ? 0 : sel + 1, n);
+          lv_label_set_text(id(browse_position_label), pos);
+
+# Left / right navigate on press while a list is open; the side button cycles
+# lists and screens. The regular button actions skip while browse_active is set
+# (a list or a screen is open).
+binary_sensor:
+  - id: !extend left_button_sensor
+    on_press:
+      - if:
+          condition:
+            lambda: return browse::current() >= 0;
+          then:
+            - script.execute:
+                id: browse_move
+                delta: -1
+  - id: !extend right_button_sensor
+    on_press:
+      - if:
+          condition:
+            lambda: return browse::current() >= 0;
+          then:
+            - script.execute:
+                id: browse_move
+                delta: 1
+  # Added after sendspin-addon-buttons.yaml's handler, which skips while a list is open
+  - id: !extend middle_button_sensor
+    on_click:
+      - if:
+          condition:
+            lambda: return browse::current() >= 0;
+          then:
+            - script.execute: browse_select
+  - id: !extend side_button_sensor
+    on_click:
+      # Everything here goes through Home Assistant, so WiFi is all that is needed
+      - if:
+          condition:
+            or:
+              - lambda: return id(browse_active);
+              - wifi.connected:
+          then:
+            - script.execute: browse_cycle
+
+lvgl:
+  pages:
+    - id: browse_page
+      bg_color: 0x000000
+      skip: true
+      scrollbar_mode: "OFF"
+      widgets:
+        - label:
+            id: browse_title_label
+            align: TOP_LEFT
+            x: 8
+            y: 6
+            text_color: 0xFFFFFF
+            text_font: font_display
+            text: ""
+        - label:
+            id: browse_position_label
+            align: TOP_RIGHT
+            x: -8
+            y: 9
+            text_color: 0xAAAAAA
+            text_font: font_time
+            text: ""
+        # 5 rows of 42px under the 30px header
+        - obj:
+            id: browse_row_0
+            x: 0
+            y: 30
+            width: 240
+            height: 42
+            bg_color: 0x303030
+            bg_opa: TRANSP
+            border_width: 0
+            radius: 0
+            pad_all: 0
+            scrollable: false
+            clickable: false
+            widgets:
+              - image:
+                  id: browse_icon_0
+                  align: LEFT_MID
+                  x: 8
+                  src: lv_rgb565a8_enabler
+              # Font is set per item at runtime
+              - label:
+                  id: browse_glyph_0
+                  align: LEFT_MID
+                  x: 8
+                  width: 32
+                  text_align: CENTER
+                  text_color: 0xFFFFFF
+                  text: ""
+                  hidden: true
+              - label:
+                  id: browse_label_0
+                  align: LEFT_MID
+                  x: 50
+                  width: 182
+                  long_mode: DOT
+                  text_color: 0xFFFFFF
+                  text_font: font_display
+                  text: ""
+        - obj:
+            id: browse_row_1
+            x: 0
+            y: 72
+            width: 240
+            height: 42
+            bg_color: 0x303030
+            bg_opa: TRANSP
+            border_width: 0
+            radius: 0
+            pad_all: 0
+            scrollable: false
+            clickable: false
+            widgets:
+              - image:
+                  id: browse_icon_1
+                  align: LEFT_MID
+                  x: 8
+                  src: lv_rgb565a8_enabler
+              # Font is set per item at runtime
+              - label:
+                  id: browse_glyph_1
+                  align: LEFT_MID
+                  x: 8
+                  width: 32
+                  text_align: CENTER
+                  text_color: 0xFFFFFF
+                  text: ""
+                  hidden: true
+              - label:
+                  id: browse_label_1
+                  align: LEFT_MID
+                  x: 50
+                  width: 182
+                  long_mode: DOT
+                  text_color: 0xFFFFFF
+                  text_font: font_display
+                  text: ""
+        - obj:
+            id: browse_row_2
+            x: 0
+            y: 114
+            width: 240
+            height: 42
+            bg_color: 0x303030
+            bg_opa: TRANSP
+            border_width: 0
+            radius: 0
+            pad_all: 0
+            scrollable: false
+            clickable: false
+            widgets:
+              - image:
+                  id: browse_icon_2
+                  align: LEFT_MID
+                  x: 8
+                  src: lv_rgb565a8_enabler
+              # Font is set per item at runtime
+              - label:
+                  id: browse_glyph_2
+                  align: LEFT_MID
+                  x: 8
+                  width: 32
+                  text_align: CENTER
+                  text_color: 0xFFFFFF
+                  text: ""
+                  hidden: true
+              - label:
+                  id: browse_label_2
+                  align: LEFT_MID
+                  x: 50
+                  width: 182
+                  long_mode: DOT
+                  text_color: 0xFFFFFF
+                  text_font: font_display
+                  text: ""
+        - obj:
+            id: browse_row_3
+            x: 0
+            y: 156
+            width: 240
+            height: 42
+            bg_color: 0x303030
+            bg_opa: TRANSP
+            border_width: 0
+            radius: 0
+            pad_all: 0
+            scrollable: false
+            clickable: false
+            widgets:
+              - image:
+                  id: browse_icon_3
+                  align: LEFT_MID
+                  x: 8
+                  src: lv_rgb565a8_enabler
+              # Font is set per item at runtime
+              - label:
+                  id: browse_glyph_3
+                  align: LEFT_MID
+                  x: 8
+                  width: 32
+                  text_align: CENTER
+                  text_color: 0xFFFFFF
+                  text: ""
+                  hidden: true
+              - label:
+                  id: browse_label_3
+                  align: LEFT_MID
+                  x: 50
+                  width: 182
+                  long_mode: DOT
+                  text_color: 0xFFFFFF
+                  text_font: font_display
+                  text: ""
+        - obj:
+            id: browse_row_4
+            x: 0
+            y: 198
+            width: 240
+            height: 42
+            bg_color: 0x303030
+            bg_opa: TRANSP
+            border_width: 0
+            radius: 0
+            pad_all: 0
+            scrollable: false
+            clickable: false
+            widgets:
+              - image:
+                  id: browse_icon_4
+                  align: LEFT_MID
+                  x: 8
+                  src: lv_rgb565a8_enabler
+              # Font is set per item at runtime
+              - label:
+                  id: browse_glyph_4
+                  align: LEFT_MID
+                  x: 8
+                  width: 32
+                  text_align: CENTER
+                  text_color: 0xFFFFFF
+                  text: ""
+                  hidden: true
+              - label:
+                  id: browse_label_4
+                  align: LEFT_MID
+                  x: 50
+                  width: 182
+                  long_mode: DOT
+                  text_color: 0xFFFFFF
+                  text_font: font_display
+                  text: ""

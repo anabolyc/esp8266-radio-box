@@ -1,0 +1,56 @@
+# ============================================================
+# Lightweight remote on a LOLIN S2 mini
+# (ESP32-S2FH4: 4 MB flash, no PSRAM)
+# ============================================================
+# The S2 mini without PSRAM runs out of memory with the Sendspin player
+# (sendspin-remote-01.yaml). This variant leaves Sendspin out: no
+# now-playing screen, cover art or playback buttons. It keeps the clock,
+# the lists (start SomaFM playback, ambient scenes) and the Lights screen,
+# which all go through Home Assistant.
+#
+# Pins use the package defaults (packages/gpio.yaml, display-tft.yaml).
+# ============================================================
+
+substitutions:
+  name: remote-01-light
+  friendly_name: Remote 01 Light
+
+  # Home Assistant player the SomaFM list plays on
+  sendspin_resume_entity: media_player.living_room
+
+esphome:
+  name: ${name}
+  friendly_name: ${friendly_name}
+  min_version: 2026.4.0
+  name_add_mac_suffix: false
+
+esp32:
+  variant: esp32s2
+  framework:
+    type: esp-idf
+
+logger:
+  level: DEBUG
+
+api:
+
+ota:
+- platform: esphome
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+  # Skip the scan: connect to the access point used last time
+  fast_connect: true
+
+packages:
+  gpio: !include packages/gpio.yaml
+  display-tft: !include packages/display-tft.yaml
+  ui-light: !include packages/ui-light.yaml
+  browse: !include packages/browse.yaml
+  # Lists on the browse page, in side button order
+  somafm-stations: !include packages/somafm-stations.yaml
+  ambient-scenes: !include packages/ambient-scenes.yaml
+  # Screens after the lists, in side button order
+  lights: !include packages/lights.yaml
+  sleep: !include packages/sleep.yaml
