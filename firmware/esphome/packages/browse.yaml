@@ -29,6 +29,14 @@ esphome:
   includes:
     - browse_list.h
 
+globals:
+  # Target of the selected item, for the Home Assistant action data. ESPHome
+  # 2026.10 generates data lambdas before the includes, so they cannot call
+  # browse:: functions directly; globals are declared early enough.
+  - id: browse_target
+    type: std::string
+    restore_value: no
+
 script:
   # Side button: open the next list, then the next screen, or close after the last one
   - id: browse_cycle
@@ -101,6 +109,7 @@ script:
             - logger.log:
                 format: "Selected %s"
                 args: ['browse::selected_item()->title']
+            - lambda: id(browse_target) = browse::selected_item()->target;
             - if:
                 condition:
                   lambda: return browse::current_list()->action == browse::Action::PLAY_MEDIA;
@@ -111,7 +120,7 @@ script:
                       data:
                         entity_id: ${sendspin_resume_entity}
                         media_content_type: music
-                        media_content_id: !lambda return browse::selected_item()->target;
+                        media_content_id: !lambda return id(browse_target);
                       on_success:
                         - logger.log: "Home Assistant started playback"
                       on_error:
@@ -123,7 +132,7 @@ script:
                   - homeassistant.action:
                       action: automation.trigger
                       data:
-                        entity_id: !lambda return browse::selected_item()->target;
+                        entity_id: !lambda return id(browse_target);
                       on_success:
                         - logger.log: "Home Assistant triggered the automation"
                       on_error:

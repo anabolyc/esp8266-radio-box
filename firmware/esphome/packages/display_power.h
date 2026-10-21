@@ -4,14 +4,17 @@
 //
 // On this board the display reset and backlight share one pin, so "off" holds the panel in
 // reset (backlight off) and "on" has to bring it out of reset and send the whole init sequence
-// again. The mipi_spi component only initialises the panel once, in setup(), and frees its init
+// again. The mipi_spi component only initialises the panel once, in setup(), and drops its init
 // sequence afterwards; calling setup() again would also register the SPI device a second time.
 // So the sequence is copied before setup() runs, and replayed here the same way setup() does.
+// ESPHome up to 2026.9 keeps the sequence in a std::vector; from 2026.10 it is a pointer and a
+// length, into constant data. Both are handled.
 
 #include "esphome/core/hal.h"
 #include "esphome/core/log.h"
 
 #include <cstdint>
+#include <type_traits>
 #include <vector>
 
 namespace display_power {
@@ -29,7 +32,15 @@ inline std::vector<uint8_t> &saved_init_sequence() {
 // Grants access to the display's protected members. The subclass adds no members of its own,
 // and is only used to reach them through a pointer to the real display object.
 template<typename Display> struct Access : Display {
-  static std::vector<uint8_t> &init_sequence(Display *d) { return static_cast<Access *>(d)->init_sequence_; }
+  static void copy_init_sequence(Display *d, std::vector<uint8_t> &out) {
+    auto *self = static_cast<Access *>(d);
+    if constexpr (std::is_pointer_v<std::decay_t<decltype(self->init_sequence_)>>) {
+      // 2026.10+: pointer and length
+      out.assign(self->init_sequence_, self->init_sequence_ + self->init_sequence_len_);
+    } else {
+      out = self->init_sequence_;
+    }
+  }
   static esphome::GPIOPin *reset_pin(Display *d) { return static_cast<Access *>(d)->reset_pin_; }
   static void write_command(Display *d, uint8_t cmd, const uint8_t *bytes, size_t len) {
     static_cast<Access *>(d)->write_command_(cmd, bytes, len);
@@ -40,7 +51,7 @@ template<typename Display> struct Access : Display {
 /// Call before the display's setup() (on_boot priority above the display's), while the
 /// init sequence is still there.
 template<typename Display> void save_init_sequence(Display *display) {
-  saved_init_sequence() = Access<Display>::init_sequence(display);
+  Access<Display>::copy_init_sequence(display, saved_init_sequence());
 }
 
 /// Hold the panel in reset, which also turns the backlight off.
