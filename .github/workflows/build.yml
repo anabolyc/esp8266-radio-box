@@ -1,6 +1,20 @@
 name: PlatformIO CI
 
-on: [ push, pull_request, workflow_dispatch ]
+on:
+  push:
+    branches: [ master ]
+    paths:
+      - 'firmware/esp8266-radio-box/**'
+      - '.github/workflows/build.yml'
+  pull_request:
+    paths:
+      - 'firmware/esp8266-radio-box/**'
+      - '.github/workflows/build.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   build:
@@ -8,29 +22,34 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.x'
+
     - name: Cache pip
-      uses: actions/cache@v2
+      uses: actions/cache@v4
       with:
         path: ~/.cache/pip
-        key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+        key: ${{ runner.os }}-pip-${{ hashFiles('firmware/esp8266-radio-box/platformio.ini') }}
         restore-keys: |
           ${{ runner.os }}-pip-
-    
+
     - name: Cache PlatformIO
-      uses: actions/cache@v2
+      uses: actions/cache@v4
       with:
         path: ~/.platformio
-        key: ${{ runner.os }}-${{ hashFiles('**/lockfiles') }}
-    
-    - name: Set up Python
-      uses: actions/setup-python@v2
-    
+        key: ${{ runner.os }}-platformio-${{ hashFiles('firmware/esp8266-radio-box/platformio.ini') }}
+        restore-keys: |
+          ${{ runner.os }}-platformio-
+
     - name: Install PlatformIO
       run: |
         python -m pip install --upgrade pip
         pip install --upgrade platformio
-    
+
     - name: Build esp8266-radio-box
       working-directory: ./firmware/esp8266-radio-box
       run: pio run

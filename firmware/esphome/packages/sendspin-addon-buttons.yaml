@@ -1,0 +1,192 @@
+# ============================================================
+# Remote buttons control the Sendspin player
+# ============================================================
+# Requires:
+#   - packages/gpio.yaml (button binary sensors)
+#   - sendspin_hub, sendspin_group_media_player
+#   - substitution sendspin_resume_entity: Home Assistant media_player entity
+#     that the middle button resumes after playback was stopped
+#   - "Allow the device to perform Home Assistant actions" enabled for this
+#     device in the ESPHome integration options
+# Left / right buttons:
+#   single click  - volume down / up
+#   double click  - previous / next track
+#   long press    - seek backward / forward while held
+# Middle button:
+#   single click  - play / pause
+# ============================================================
+
+substitutions:
+  # Long press seeks by this many milliseconds every seek_repeat_interval
+  seek_step_ms: "10000"
+  seek_repeat_interval: 500ms
+
+esphome:
+  includes:
+    - packages/sendspin_seek.h
+  on_boot:
+    - then:
+        # Track whether the server currently accepts "play" from this controller
+        - lambda: |-
+            id(sendspin_hub)->add_controller_state_callback([](const sendspin::ServerStateControllerObject &st) {
+              const auto &cmds = st.supported_commands;
+              id(sendspin_play_supported) =
+                  std::find(cmds.begin(), cmds.end(), sendspin::SendspinControllerCommand::PLAY) != cmds.end();
+            });
+
+globals:
+  # Set while a page that uses the buttons itself (packages/browse.yaml) is open;
+  # the actions below then do nothing
+  - id: browse_active
+    type: bool
+    restore_value: no
+    initial_value: 'false'
+  - id: sendspin_play_supported
+    type: bool
+    restore_value: no
+    initial_value: 'false'
+
+script:
+  - id: sendspin_seek_relative
+    parameters:
+      offset_ms: int
+    then:
+      - lambda: sendspin_seek::seek_relative(id(sendspin_hub), offset_ms);
+
+  # Keep seeking while the button is held
+  - id: seek_backward_while_held
+    mode: restart
+    then:
+      - while:
+          condition:
+            binary_sensor.is_on: left_button_sensor
+          then:
+            - script.execute:
+                id: sendspin_seek_relative
+                offset_ms: -${seek_step_ms}
+            - delay: ${seek_repeat_interval}
+
+  - id: seek_forward_while_held
+    mode: restart
+    then:
+      - while:
+          condition:
+            binary_sensor.is_on: right_button_sensor
+          then:
+            - script.execute:
+                id: sendspin_seek_relative
+                offset_ms: ${seek_step_ms}
+            - delay: ${seek_repeat_interval}
+
+  - id: sendspin_toggle_playback
+    then:
+      - if:
+          condition:
+            media_player.is_playing: sendspin_group_media_player
+          then:
+            - media_player.pause: sendspin_group_media_player
+          else:
+            - if:
+                condition:
+                  lambda: return id(sendspin_play_supported);
+                then:
+                  - script.execute: loading_show
+                  - media_player.play: sendspin_group_media_player
+                else:
+                  # After a stop Music Assistant moves the remote into its own empty
+                  # group, which rejects "play" and ignores "switch". Resume the
+                  # speaker through Home Assistant instead.
+                  - logger.log: "Play not available in current group, resuming ${sendspin_resume_entity} via Home Assistant"
+                  - script.execute: loading_show
+                  - homeassistant.action:
+                      action: media_player.media_play
+                      data:
+                        entity_id: ${sendspin_resume_entity}
+                      on_success:
+                        - logger.log: "Home Assistant resumed ${sendspin_resume_entity}"
+                      on_error:
+                        - logger.log:
+                            level: WARN
+                            format: "Home Assistant could not resume ${sendspin_resume_entity}: %s"
+                            args: [error.c_str()]
+
+binary_sensor:
+  - id: !extend left_button_sensor
+    on_multi_click:
+      # Double click
+      - timing:
+          - ON for at most 0.4s
+          - OFF for at most 0.3s
+          - ON for at most 0.4s
+          - OFF for at least 0.1s
+        then:
+          - if:
+              condition:
+                lambda: return !id(browse_active);
+              then:
+                - media_player.previous: sendspin_group_media_player
+      # Long press
+      - timing:
+          - ON for at least 0.6s
+        then:
+          - if:
+              condition:
+                lambda: return !id(browse_active);
+              then:
+                - script.execute: seek_backward_while_held
+      # Single click (fires once a double click is ruled out)
+      - timing:
+          - ON for at most 0.4s
+          - OFF for at least 0.3s
+        then:
+          - if:
+              condition:
+                lambda: return !id(browse_active);
+              then:
+                - media_player.volume_down: sendspin_group_media_player
+                - script.execute: volume_overlay_show
+
+  - id: !extend middle_button_sensor
+    on_click:
+      # Runs before handlers added by later packages (browse.yaml acts on this
+      # click itself while its page is open)
+      - if:
+          condition:
+            lambda: return !id(browse_active);
+          then:
+            - script.execute: sendspin_toggle_playback
+
+  - id: !extend right_button_sensor
+    on_multi_click:
+      # Double click
+      - timing:
+          - ON for at most 0.4s
+          - OFF for at most 0.3s
+          - ON for at most 0.4s
+          - OFF for at least 0.1s
+        then:
+          - if:
+              condition:
+                lambda: return !id(browse_active);
+              then:
+                - media_player.next: sendspin_group_media_player
+      # Long press
+      - timing:
+          - ON for at least 0.6s
+        then:
+          - if:
+              condition:
+                lambda: return !id(browse_active);
+              then:
+                - script.execute: seek_forward_while_held
+      # Single click (fires once a double click is ruled out)
+      - timing:
+          - ON for at most 0.4s
+          - OFF for at least 0.3s
+        then:
+          - if:
+              condition:
+                lambda: return !id(browse_active);
+              then:
+                - media_player.volume_up: sendspin_group_media_player
+                - script.execute: volume_overlay_show

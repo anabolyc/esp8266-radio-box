@@ -1,0 +1,51 @@
+substitutions:
+  # GPIO0 is the side button on the remote
+  side_button: GPIO0
+  # GPIO12 is the left button on the remote
+  left_button: GPIO12
+  # GPIO16 is the middle button on the remote
+  middle_button: GPIO16
+  # GPIO9 is the right button on the remote
+  right_button: GPIO9
+
+binary_sensor:
+  - platform: gpio
+    pin: 
+      number: ${side_button}
+      mode: 
+        input: true
+        pullup: true
+      inverted: true
+    id: side_button_sensor
+    name: "Side Button"
+
+  - platform: gpio
+    pin: 
+      number: ${left_button}
+      allow_other_uses: true
+      mode: 
+        input: true
+        pulldown: true
+    id: left_button_sensor
+    name: "Left Button"
+
+  - platform: gpio
+    pin: 
+      number: ${middle_button}
+      allow_other_uses: true
+      mode: 
+        input: true
+        pullup: true
+      inverted: true
+    id: middle_button_sensor
+    name: "Middle Button"
+
+  - platform: gpio
+    pin: 
+      number: ${right_button}
+      allow_other_uses: true
+      mode: 
+        input: true
+        pulldown: true
+    id: right_button_sensor
+    name: "Right Button"

@@ -1,0 +1,46 @@
+# ============================================================
+# Ambient scenes: a list for the browse page (packages/browse.yaml)
+# ============================================================
+# Each item triggers a Home Assistant automation that starts mood audio
+# and lights. Taken from the automation.ambient_* entities in Home
+# Assistant; "Stop" turns the audio and effects off and is kept last.
+# Icons are Material Design Icons, chosen from the scene names.
+# ============================================================
+
+substitutions:
+  mdi_forest_glyph: "\U000F1897"
+  mdi_weather_lightning_glyph: "\U000F0593"
+  mdi_waves_glyph: "\U000F078D"
+  mdi_weather_lightning_rainy_glyph: "\U000F067E"
+  mdi_weather_sunny_glyph: "\U000F0599"
+  mdi_stop_circle_outline_glyph: "\U000F0667"
+
+font:
+  - file: https://github.com/Templarian/MaterialDesign-Webfont/raw/refs/heads/master/fonts/materialdesignicons-webfont.ttf
+    id: font_ambient_glyphs
+    size: 28
+    glyphs: [
+      "${mdi_forest_glyph}",
+      "${mdi_weather_lightning_glyph}",
+      "${mdi_waves_glyph}",
+      "${mdi_weather_lightning_rainy_glyph}",
+      "${mdi_weather_sunny_glyph}",
+      "${mdi_stop_circle_outline_glyph}",
+    ]
+
+esphome:
+  on_boot:
+    - then:
+        - lambda: |-
+            browse::List list{"Ambient", browse::Action::TRIGGER_AUTOMATION};
+            auto *font = id(font_ambient_glyphs);
+            list.items = {
+                {"Forest life", "automation.ambient_forest_life", nullptr, "${mdi_forest_glyph}", font},
+                {"Heavy Thunder", "automation.ambient_heavey_thunder", nullptr, "${mdi_weather_lightning_glyph}", font},
+                {"Ocean", "automation.ambient_ocean", nullptr, "${mdi_waves_glyph}", font},
+                {"Rain and Thunder", "automation.ambient_rain_and_thunder", nullptr, "${mdi_weather_lightning_rainy_glyph}", font},
+                {"Summer", "automation.ambient_summer", nullptr, "${mdi_weather_sunny_glyph}", font},
+                // Turns the audio and effects off
+                {"Stop", "automation.ambient_stop", nullptr, "${mdi_stop_circle_outline_glyph}", font},
+            };
+            browse::lists().push_back(std::move(list));

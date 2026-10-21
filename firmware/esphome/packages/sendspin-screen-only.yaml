@@ -1,0 +1,16 @@
+# ============================================================
+# Sendspin hub and group media player (no audio playback)
+# ============================================================
+# Track metadata sensors live in sendspin-addon-display.yaml, where the
+# screen uses them. They are not exposed to Home Assistant, to save heap
+# on boards without PSRAM.
+# ============================================================
+
+sendspin:
+  id: sendspin_hub
+  task_stack_in_psram: ${task_stack_in_psram}
+
+media_player:
+  - platform: sendspin
+    id: sendspin_group_media_player
+    name: "${friendly_name} Sendspin Player"

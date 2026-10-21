@@ -1,0 +1,346 @@
+# ============================================================
+# Light UI: clock and the screens reached with the side button,
+# without Sendspin
+# ============================================================
+# For boards too small for the Sendspin player (sendspin-remote-01-light.yaml):
+# no now-playing screen, cover art or playback buttons. The lists
+# (packages/browse.yaml) and the Lights screen (packages/lights.yaml) work as
+# usual, since they only go through Home Assistant.
+#
+# Provides what those packages expect from a UI package: the LVGL setup, fonts
+# (font_display, font_time), the lv_rgb565a8_enabler image, the browse_active
+# and splash_active globals, the ui_show_home and loading_show scripts, and
+# the "Display" switch (display_power_switch, used by packages/sleep.yaml).
+#
+# Requires:
+#   - display s3_box_lcd (packages/display-tft.yaml)
+# ============================================================
+
+defaults:
+  font_family: Roboto
+  font_glyphsets: "GF_Latin_Core"
+
+substitutions:
+  mdi_wifi_glyph: "\U000F05A9"
+  mdi_home_assistant_glyph: "\U000F07D0"
+  mdi_timer_sand_glyph: "\U000F051F"
+  # LVGL draw buffer, as a share of the screen
+  lvgl_buffer_size: 10%
+  # How long the hourglass acknowledges a request. Without a player there is
+  # nothing to wait for, so it just confirms the press was sent.
+  loading_ack_time: 1500ms
+
+esphome:
+  includes:
+    - packages/display_power.h
+  on_boot:
+    # Before the display is set up: keep its init sequence for turning it back on
+    - priority: 1000
+      then:
+        - lambda: display_power::save_init_sequence(id(s3_box_lcd));
+
+globals:
+  # Set while a list or screen that uses the buttons itself is open
+  - id: browse_active
+    type: bool
+    restore_value: no
+    initial_value: 'false'
+  - id: splash_active
+    type: bool
+    restore_value: no
+    initial_value: 'true'
+  - id: display_off
+    type: bool
+    restore_value: no
+    initial_value: 'false'
+
+switch:
+  # Display on/off. Off holds the panel in reset, which also turns the backlight off
+  # (they share a pin); on re-initialises the panel and redraws the screen.
+  - platform: template
+    id: display_power_switch
+    name: "Display"
+    icon: mdi:monitor
+    optimistic: true
+    restore_mode: ALWAYS_ON
+    on_turn_off:
+      - lvgl.pause:
+      - lambda: display_power::turn_off(id(s3_box_lcd));
+      - globals.set:
+          id: display_off
+          value: 'true'
+    on_turn_on:
+      # Also fires when the state is restored at boot, when there is nothing to undo
+      - if:
+          condition:
+            lambda: return id(display_off);
+          then:
+            - lambda: display_power::turn_on(id(s3_box_lcd));
+            - globals.set:
+                id: display_off
+                value: 'false'
+            - lvgl.resume:
+            - lvgl.widget.redraw:
+
+time:
+  - platform: sntp
+    id: sntp_time
+
+interval:
+  - interval: 0.5s
+    then:
+      - script.execute: update_splash
+      - lambda: |-
+          auto now = id(sntp_time).now();
+          if (!now.is_valid()) return;
+
+          char buf[8];
+          snprintf(buf, sizeof(buf), "%d", now.hour);
+          lv_label_set_text(id(clock_hours_label), buf);
+          snprintf(buf, sizeof(buf), "%02d", now.minute);
+          lv_label_set_text(id(clock_minutes_label), buf);
+          // Flashing separator
+          lv_label_set_text(id(clock_separator_label), now.second % 2 == 0 ? "." : " ");
+
+          // Rainbow colour cycling based on the current time
+          auto colour = [](int seq) -> int {
+            seq = seq % 0xff;
+            if (seq < 85)
+              return seq * 3;
+            else if (seq < 170)
+              return 255 - (seq - 85) * 3;
+            return 0;
+          };
+          auto seq = now.timestamp;
+          auto text_colour = lv_color_make(colour(seq), colour(seq + 85), colour(seq + 170));
+          lv_obj_set_style_text_color(id(clock_hours_label), text_colour, 0);
+          lv_obj_set_style_text_color(id(clock_separator_label), text_colour, 0);
+          lv_obj_set_style_text_color(id(clock_minutes_label), text_colour, 0);
+
+font:
+  # For the clock page
+  - file:
+      type: gfonts
+      family: ${font_family}
+      weight: regular
+    id: text_big
+    size: 96
+    glyphs: ['.', ' ', ':', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9']
+
+  # Mono font for numbers that change in place
+  - file:
+      type: gfonts
+      family: Roboto Mono
+      weight: 400
+    id: font_time
+    size: 14
+    glyphs: [' ', ':', '%', '/', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9']
+
+  - file:
+      type: gfonts
+      family: ${font_family}
+      weight: 300
+    id: font_display
+    size: 20
+    glyphsets:
+      - ${font_glyphsets}
+
+  # Large Material Design Icons for the splash screen
+  - file: https://github.com/Templarian/MaterialDesign-Webfont/raw/refs/heads/master/fonts/materialdesignicons-webfont.ttf
+    id: font_mdi_large
+    size: 96
+    glyphs: [
+      "${mdi_wifi_glyph}",
+      "${mdi_home_assistant_glyph}",
+    ]
+
+  # Medium Material Design Icons for the hourglass
+  - file: https://github.com/Templarian/MaterialDesign-Webfont/raw/refs/heads/master/fonts/materialdesignicons-webfont.ttf
+    id: font_mdi_medium
+    size: 48
+    glyphs: [
+      "${mdi_timer_sand_glyph}",
+    ]
+
+image:
+  # LVGL 9 can only draw some image sources when LV_DRAW_SW_SUPPORT_RGB565A8 is
+  # enabled, which ESPHome only does if an RGB565 image with alpha is used in LVGL.
+  # This 1x1 image is also the browse rows' placeholder.
+  - platform: file
+    file: mdi:circle
+    id: lv_rgb565a8_enabler
+    type: RGB565
+    transparency: alpha_channel
+    resize: 1x1
+
+script:
+  # Default page: splash while connecting, else the clock.
+  # Used by the browse page (packages/browse.yaml) to go back.
+  - id: ui_show_home
+    then:
+      - if:
+          condition:
+            lambda: return id(splash_active);
+          then:
+            - lvgl.page.show: splash_page
+          else:
+            - lvgl.page.show: idle_page
+
+  # Hourglass shown briefly to acknowledge a request (packages/browse.yaml)
+  - id: loading_show
+    mode: restart
+    then:
+      - lvgl.widget.show: loading_overlay
+      - delay: ${loading_ack_time}
+      - lvgl.widget.hide: loading_overlay
+
+  # Splash screen while connecting: WiFi, then Home Assistant (and the clock
+  # time). Leaves once ready; comes back if a connection drops.
+  - id: update_splash
+    then:
+      - if:
+          condition:
+            not:
+              wifi.connected:
+          then:
+            - script.execute:
+                id: show_splash
+                glyph: "${mdi_wifi_glyph}"
+                message: "Connecting to Wi-Fi"
+          else:
+            - if:
+                condition:
+                  or:
+                    - not:
+                        api.connected:
+                    - lambda: return !id(sntp_time).now().is_valid();
+                then:
+                  - script.execute:
+                      id: show_splash
+                      glyph: "${mdi_home_assistant_glyph}"
+                      message: "Connecting to Home Assistant"
+                else:
+                  - if:
+                      condition:
+                        lambda: return id(splash_active);
+                      then:
+                        - globals.set:
+                            id: splash_active
+                            value: 'false'
+                        # Stay on a list or screen if one is open
+                        - if:
+                            condition:
+                              lambda: return !id(browse_active);
+                            then:
+                              - lvgl.page.show: idle_page
+
+  - id: show_splash
+    parameters:
+      glyph: std::string
+      message: std::string
+    then:
+      - if:
+          condition:
+            lambda: return glyph != lv_label_get_text(id(splash_icon));
+          then:
+            - lvgl.label.update:
+                id: splash_icon
+                text: !lambda return glyph;
+            - lvgl.label.update:
+                id: splash_message
+                text: !lambda return message;
+      - if:
+          condition:
+            lambda: return !id(splash_active);
+          then:
+            - globals.set:
+                id: splash_active
+                value: 'true'
+            # Lists and screens go through Home Assistant too, but leave them open
+            - if:
+                condition:
+                  lambda: return !id(browse_active);
+                then:
+                  - lvgl.page.show: splash_page
+
+lvgl:
+  displays:
+    - s3_box_lcd
+  rotation: 180
+  buffer_size: ${lvgl_buffer_size}
+  color_depth: 16
+  bg_color: 0x000000
+  default_font: font_display
+  # Above every page
+  top_layer:
+    widgets:
+      - obj:
+          id: loading_overlay
+          align: CENTER
+          width: 80
+          height: 80
+          radius: 40
+          bg_color: 0x000000
+          bg_opa: 70%
+          border_width: 0
+          pad_all: 0
+          scrollable: false
+          clickable: false
+          hidden: true
+          widgets:
+            - label:
+                align: CENTER
+                text_color: 0xFFFFFF
+                text_font: font_mdi_medium
+                text: "${mdi_timer_sand_glyph}"
+  pages:
+    # First page: shown from boot until connected
+    - id: splash_page
+      bg_color: 0x000000
+      skip: true
+      widgets:
+        - label:
+            id: splash_icon
+            align: CENTER
+            y: -20
+            text_color: 0xFFFFFF
+            text_font: font_mdi_large
+            text: "${mdi_wifi_glyph}"
+        - label:
+            id: splash_message
+            align: CENTER
+            y: 60
+            width: 220
+            text_align: CENTER
+            text_color: 0xAAAAAA
+            text_font: font_display
+            text: "Connecting to Wi-Fi"
+
+    # LVGL needs one page not marked skip
+    - id: idle_page
+      bg_color: 0x000000
+      widgets:
+        - label:
+            id: clock_hours_label
+            align: CENTER
+            x: -60
+            y: -10
+            text_color: 0xFFFFFF
+            text_font: text_big
+            text: "--"
+        - label:
+            id: clock_separator_label
+            align: CENTER
+            x: 0
+            y: -10
+            text_color: 0xFFFFFF
+            text_font: text_big
+            text: "."
+        - label:
+            id: clock_minutes_label
+            align: CENTER
+            x: 60
+            y: -10
+            text_color: 0xFFFFFF
+            text_font: text_big
+            text: "--"

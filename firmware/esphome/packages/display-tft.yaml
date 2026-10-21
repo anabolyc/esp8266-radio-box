@@ -1,0 +1,32 @@
+substitutions:
+  spi_clk_pin: GPIO7
+  spi_mosi_pin: GPIO11
+  display_dc_pin: GPIO18
+  display_reset_pin: GPIO5
+  display_model: ST7789V
+
+spi:
+  clk_pin: ${spi_clk_pin}
+  mosi_pin: ${spi_mosi_pin}
+  id: spi_bus_display
+
+display:
+  - platform: mipi_spi
+    id: s3_box_lcd
+    model: ${display_model}
+    dimensions:
+      width: 240
+      height: 240
+      offset_height: 0
+      offset_width: 0
+    # color_order: BGR
+    invert_colors: true
+    # rotation: 90
+    spi_id: spi_bus_display
+    dc_pin: ${display_dc_pin}
+    reset_pin: ${display_reset_pin}
+    # These two set how much time the ESP32 is running the display
+    # which takes time away from playing audio!
+    data_rate: 10MHz # T_cycle min is 100ns
+    auto_clear_enabled: false
+    update_interval: never

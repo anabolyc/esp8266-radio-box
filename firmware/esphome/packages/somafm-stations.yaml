@@ -1,0 +1,296 @@
+# ============================================================
+# SomaFM stations: a list for the browse page (packages/browse.yaml)
+# ============================================================
+# Static list, taken from https://somafm.com/channels.json.
+# Icons are downloaded and scaled down at compile time.
+# ============================================================
+
+substitutions:
+  somafm_icon_size: 32x32
+
+image:
+  - platform: file
+    id: somafm_beatblender
+    file: https://api.somafm.com/logos/120/beatblender120.png
+    resize: ${somafm_icon_size}
+    type: RGB565
+  - platform: file
+    id: somafm_brfm
+    file: https://api.somafm.com/logos/120/brfm120.jpg
+    resize: ${somafm_icon_size}
+    type: RGB565
+  - platform: file
+    id: somafm_bootliquor
+    file: https://api.somafm.com/logos/120/bootliquor120.jpg
+    resize: ${somafm_icon_size}
+    type: RGB565
+  - platform: file
+    id: somafm_bossa
+    file: https://api.somafm.com/logos/120/bossa120.jpg
+    resize: ${somafm_icon_size}
+    type: RGB565
+  - platform: file
+    id: somafm_chillits
+    file: https://api.somafm.com/logos/120/chillits120.png
+    resize: ${somafm_icon_size}
+    type: RGB565
+  - platform: file
+    id: somafm_cliqhop
+    file: https://api.somafm.com/logos/120/cliqhop120.png
+    resize: ${somafm_icon_size}
+    type: RGB565
+  - platform: file
+    id: somafm_covers
+    file: https://api.somafm.com/logos/120/covers120.jpg
+    resize: ${somafm_icon_size}
+    type: RGB565
+  - platform: file
+    id: somafm_deepspaceone
+    file: https://api.somafm.com/logos/120/deepspaceone120.gif
+    resize: ${somafm_icon_size}
+    type: RGB565
+  - platform: file
+    id: somafm_defcon
+    file: https://api.somafm.com/logos/120/defcon120.png
+    resize: ${somafm_icon_size}
+    type: RGB565
+  - platform: file
+    id: somafm_digitalis
+    file: https://api.somafm.com/logos/120/digitalis120.png
+    resize: ${somafm_icon_size}
+    type: RGB565
+  - platform: file
+    id: somafm_doomed
+    file: https://api.somafm.com/logos/120/doomed120.png
+    resize: ${somafm_icon_size}
+    type: RGB565
+  - platform: file
+    id: somafm_dronezone
+    file: https://api.somafm.com/logos/120/dronezone120.jpg
+    resize: ${somafm_icon_size}
+    type: RGB565
+  - platform: file
+    id: somafm_dz2
+    file: https://api.somafm.com/logos/120/dz2120.jpg
+    resize: ${somafm_icon_size}
+    type: RGB565
+  - platform: file
+    id: somafm_dubstep
+    file: https://api.somafm.com/logos/120/dubstep120.png
+    resize: ${somafm_icon_size}
+    type: RGB565
+  - platform: file
+    id: somafm_fluid
+    file: https://api.somafm.com/logos/120/fluid120.jpg
+    resize: ${somafm_icon_size}
+    type: RGB565
+  - platform: file
+    id: somafm_folkfwd
+    file: https://api.somafm.com/logos/120/folkfwd120.jpg
+    resize: ${somafm_icon_size}
+    type: RGB565
+  - platform: file
+    id: somafm_groovesalad
+    file: https://api.somafm.com/logos/120/groovesalad120.png
+    resize: ${somafm_icon_size}
+    type: RGB565
+  - platform: file
+    id: somafm_groovesalad2
+    file: https://api.somafm.com/logos/120/groovesalad2120.png
+    resize: ${somafm_icon_size}
+    type: RGB565
+  - platform: file
+    id: somafm_gsclassic
+    file: https://api.somafm.com/logos/120/gsclassic120.jpg
+    resize: ${somafm_icon_size}
+    type: RGB565
+  - platform: file
+    id: somafm_reggae
+    file: https://api.somafm.com/logos/120/reggae120.png
+    resize: ${somafm_icon_size}
+    type: RGB565
+  - platform: file
+    id: somafm_illstreet
+    file: https://api.somafm.com/logos/120/illstreet120.jpg
+    resize: ${somafm_icon_size}
+    type: RGB565
+  - platform: file
+    id: somafm_indiepop
+    file: https://api.somafm.com/logos/120/indiepop120.jpg
+    resize: ${somafm_icon_size}
+    type: RGB565
+  - platform: file
+    id: somafm_seventies
+    file: https://api.somafm.com/logos/120/seventies120.jpg
+    resize: ${somafm_icon_size}
+    type: RGB565
+  - platform: file
+    id: somafm_lush
+    file: https://api.somafm.com/logos/120/lush120.jpg
+    resize: ${somafm_icon_size}
+    type: RGB565
+  - platform: file
+    id: somafm_metal
+    file: https://api.somafm.com/logos/120/metal120.png
+    resize: ${somafm_icon_size}
+    type: RGB565
+  - platform: file
+    id: somafm_missioncontrol
+    file: https://api.somafm.com/logos/120/missioncontrol120.jpg
+    resize: ${somafm_icon_size}
+    type: RGB565
+  - platform: file
+    id: somafm_n5md
+    file: https://api.somafm.com/logos/120/n5md120.png
+    resize: ${somafm_icon_size}
+    type: RGB565
+  - platform: file
+    id: somafm_poptron
+    file: https://api.somafm.com/logos/120/poptron120.png
+    resize: ${somafm_icon_size}
+    type: RGB565
+  - platform: file
+    id: somafm_secretagent
+    file: https://api.somafm.com/logos/120/secretagent120.jpg
+    resize: ${somafm_icon_size}
+    type: RGB565
+  - platform: file
+    id: somafm_7soul
+    file: https://api.somafm.com/logos/120/7soul120.png
+    resize: ${somafm_icon_size}
+    type: RGB565
+  - platform: file
+    id: somafm_sf1033
+    file: https://api.somafm.com/logos/120/sf1033120.png
+    resize: ${somafm_icon_size}
+    type: RGB565
+  - platform: file
+    id: somafm_sfinsf
+    file: https://api.somafm.com/logos/120/sfinsf120.jpg
+    resize: ${somafm_icon_size}
+    type: RGB565
+  - platform: file
+    id: somafm_scanner
+    file: https://api.somafm.com/logos/120/sf1033120.png
+    resize: ${somafm_icon_size}
+    type: RGB565
+  - platform: file
+    id: somafm_live
+    file: https://api.somafm.com/logos/120/live120.jpg
+    resize: ${somafm_icon_size}
+    type: RGB565
+  - platform: file
+    id: somafm_specials
+    file: https://api.somafm.com/logos/120/SomaFMDJSquare120.jpg
+    resize: ${somafm_icon_size}
+    type: RGB565
+  - platform: file
+    id: somafm_sonicuniverse
+    file: https://api.somafm.com/logos/120/sonicuniverse120.jpg
+    resize: ${somafm_icon_size}
+    type: RGB565
+  - platform: file
+    id: somafm_spacestation
+    file: https://api.somafm.com/logos/120/spacestation120.jpg
+    resize: ${somafm_icon_size}
+    type: RGB565
+  - platform: file
+    id: somafm_suburbsofgoa
+    file: https://api.somafm.com/logos/120/sog120.jpg
+    resize: ${somafm_icon_size}
+    type: RGB565
+  - platform: file
+    id: somafm_synphaera
+    file: https://api.somafm.com/logos/120/synphaera120.jpg
+    resize: ${somafm_icon_size}
+    type: RGB565
+  - platform: file
+    id: somafm_darkzone
+    file: https://api.somafm.com/logos/120/darkzone120.jpg
+    resize: ${somafm_icon_size}
+    type: RGB565
+  - platform: file
+    id: somafm_insound
+    file: https://api.somafm.com/logos/120/insound120.jpg
+    resize: ${somafm_icon_size}
+    type: RGB565
+  - platform: file
+    id: somafm_thetrip
+    file: https://api.somafm.com/logos/120/thetrip120.jpg
+    resize: ${somafm_icon_size}
+    type: RGB565
+  - platform: file
+    id: somafm_thistle
+    file: https://api.somafm.com/logos/120/thistle120.png
+    resize: ${somafm_icon_size}
+    type: RGB565
+  - platform: file
+    id: somafm_tikitime
+    file: https://api.somafm.com/logos/120/tikitime120.jpg
+    resize: ${somafm_icon_size}
+    type: RGB565
+  - platform: file
+    id: somafm_u80s
+    file: https://api.somafm.com/logos/120/u80s120.png
+    resize: ${somafm_icon_size}
+    type: RGB565
+  - platform: file
+    id: somafm_vaporwaves
+    file: https://api.somafm.com/logos/120/vaporwaves120.jpg
+    resize: ${somafm_icon_size}
+    type: RGB565
+
+esphome:
+  on_boot:
+    - then:
+        - lambda: |-
+            browse::List list{"SomaFM", browse::Action::PLAY_MEDIA};
+            auto &items = list.items;
+            items.reserve(46);
+            items.push_back({"Beat Blender", "https://ice2.somafm.com/beatblender-128-mp3", id(somafm_beatblender)});
+            items.push_back({"Black Rock FM", "https://ice2.somafm.com/brfm-128-mp3", id(somafm_brfm)});
+            items.push_back({"Boot Liquor", "https://ice2.somafm.com/bootliquor-320-mp3", id(somafm_bootliquor)});
+            items.push_back({"Bossa Beyond", "https://ice2.somafm.com/bossa-256-mp3", id(somafm_bossa)});
+            items.push_back({"Chillits Radio", "https://ice2.somafm.com/chillits-256-mp3", id(somafm_chillits)});
+            items.push_back({"cliqhop idm", "https://ice2.somafm.com/cliqhop-256-mp3", id(somafm_cliqhop)});
+            items.push_back({"Covers", "https://ice2.somafm.com/covers-128-mp3", id(somafm_covers)});
+            items.push_back({"Deep Space One", "https://ice2.somafm.com/deepspaceone-128-mp3", id(somafm_deepspaceone)});
+            items.push_back({"DEF CON Radio", "https://ice2.somafm.com/defcon-256-mp3", id(somafm_defcon)});
+            items.push_back({"Digitalis", "https://ice2.somafm.com/digitalis-256-mp3", id(somafm_digitalis)});
+            items.push_back({"Doomed", "https://ice2.somafm.com/doomed-256-mp3", id(somafm_doomed)});
+            items.push_back({"Drone Zone", "https://ice2.somafm.com/dronezone-256-mp3", id(somafm_dronezone)});
+            items.push_back({"Drone Zone 2", "https://ice2.somafm.com/dz2-128-mp3", id(somafm_dz2)});
+            items.push_back({"Dub Step Beyond", "https://ice2.somafm.com/dubstep-256-mp3", id(somafm_dubstep)});
+            items.push_back({"Fluid", "https://ice2.somafm.com/fluid-128-mp3", id(somafm_fluid)});
+            items.push_back({"Folk Forward", "https://ice2.somafm.com/folkfwd-128-mp3", id(somafm_folkfwd)});
+            items.push_back({"Groove Salad", "https://ice2.somafm.com/groovesalad-256-mp3", id(somafm_groovesalad)});
+            items.push_back({"Groove Salad 2", "https://ice2.somafm.com/groovesalad2-256-mp3", id(somafm_groovesalad2)});
+            items.push_back({"Groove Salad Classic", "https://ice2.somafm.com/gsclassic-128-mp3", id(somafm_gsclassic)});
+            items.push_back({"Heavyweight Reggae", "https://ice2.somafm.com/reggae-256-mp3", id(somafm_reggae)});
+            items.push_back({"Illinois Street Lounge", "https://ice2.somafm.com/illstreet-128-mp3", id(somafm_illstreet)});
+            items.push_back({"Indie Pop Rocks!", "https://ice2.somafm.com/indiepop-128-mp3", id(somafm_indiepop)});
+            items.push_back({"Left Coast 70s", "https://ice2.somafm.com/seventies-320-mp3", id(somafm_seventies)});
+            items.push_back({"Lush", "https://ice2.somafm.com/lush-128-mp3", id(somafm_lush)});
+            items.push_back({"Metal Detector", "https://ice2.somafm.com/metal-128-mp3", id(somafm_metal)});
+            items.push_back({"Mission Control", "https://ice2.somafm.com/missioncontrol-128-mp3", id(somafm_missioncontrol)});
+            items.push_back({"n5MD Radio", "https://ice2.somafm.com/n5md-128-mp3", id(somafm_n5md)});
+            items.push_back({"PopTron", "https://ice2.somafm.com/poptron-128-mp3", id(somafm_poptron)});
+            items.push_back({"Secret Agent", "https://ice2.somafm.com/secretagent-128-mp3", id(somafm_secretagent)});
+            items.push_back({"Seven Inch Soul", "https://ice2.somafm.com/7soul-128-mp3", id(somafm_7soul)});
+            items.push_back({"SF 10-33", "https://ice2.somafm.com/sf1033-128-mp3", id(somafm_sf1033)});
+            items.push_back({"SF in SF", "https://ice2.somafm.com/sfinsf-128-mp3", id(somafm_sfinsf)});
+            items.push_back({"SF Police Scanner", "https://ice2.somafm.com/scanner-128-mp3", id(somafm_scanner)});
+            items.push_back({"SomaFM Live", "https://ice2.somafm.com/live-128-mp3", id(somafm_live)});
+            items.push_back({"SomaFM Specials", "https://ice2.somafm.com/specials-128-mp3", id(somafm_specials)});
+            items.push_back({"Sonic Universe", "https://ice2.somafm.com/sonicuniverse-256-mp3", id(somafm_sonicuniverse)});
+            items.push_back({"Space Station Soma", "https://ice2.somafm.com/spacestation-320-mp3", id(somafm_spacestation)});
+            items.push_back({"Suburbs of Goa", "https://ice2.somafm.com/suburbsofgoa-128-mp3", id(somafm_suburbsofgoa)});
+            items.push_back({"Synphaera Radio", "https://ice2.somafm.com/synphaera-256-mp3", id(somafm_synphaera)});
+            items.push_back({"The Dark Zone", "https://ice2.somafm.com/darkzone-256-mp3", id(somafm_darkzone)});
+            items.push_back({"The In-Sound", "https://ice2.somafm.com/insound-256-mp3", id(somafm_insound)});
+            items.push_back({"The Trip", "https://ice2.somafm.com/thetrip-128-mp3", id(somafm_thetrip)});
+            items.push_back({"ThistleRadio", "https://ice2.somafm.com/thistle-128-mp3", id(somafm_thistle)});
+            items.push_back({"Tiki Time", "https://ice2.somafm.com/tikitime-256-mp3", id(somafm_tikitime)});
+            items.push_back({"Underground 80s", "https://ice2.somafm.com/u80s-256-mp3", id(somafm_u80s)});
+            items.push_back({"Vaporwaves", "https://ice2.somafm.com/vaporwaves-128-mp3", id(somafm_vaporwaves)});
+            browse::lists().push_back(std::move(list));

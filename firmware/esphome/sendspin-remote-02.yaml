@@ -1,0 +1,75 @@
+# ============================================================
+# Sendspin remote on a LOLIN S3 mini
+# (ESP32-S3FH4R2: 4 MB flash, 2 MB PSRAM)
+# ============================================================
+# Drop-in replacement for the LOLIN S2 mini (sendspin-remote-01.yaml).
+# Same footprint, different GPIO numbers behind the same header pins.
+# PSRAM allows full-size cover art and the default network settings.
+# ============================================================
+
+substitutions:
+  name: sendspin-remote-02
+  friendly_name: Remote 02
+
+  # Home Assistant player the middle button resumes after playback was stopped
+  sendspin_resume_entity: media_player.living_room
+
+  # Pins, by header position on the S2 mini footprint
+  side_button: GPIO0         # on-board "0" button
+  left_button: GPIO10        # S2 mini: GPIO12
+  middle_button: GPIO16      # S2 mini: GPIO16
+  right_button: GPIO13       # S2 mini: GPIO9
+  spi_clk_pin: GPIO12        # S2 mini: GPIO7
+  spi_mosi_pin: GPIO11       # S2 mini: GPIO11
+  display_dc_pin: GPIO18     # S2 mini: GPIO18
+  display_reset_pin: GPIO4   # S2 mini: GPIO5; also the backlight
+
+  # Memory-dependent settings (see the packages for the low-memory defaults)
+  task_stack_in_psram: true
+  cover_art_size: 240
+  lvgl_buffer_size: 25%
+
+esphome:
+  name: ${name}
+  friendly_name: ${friendly_name}
+  min_version: 2026.4.0
+  name_add_mac_suffix: false
+
+esp32:
+  variant: esp32s3
+  flash_size: 4MB
+  framework:
+    type: esp-idf
+
+psram:
+  mode: quad
+  speed: 80MHz
+
+logger:
+  level: DEBUG
+
+api:
+
+ota:
+- platform: esphome
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+  # Skip the scan: connect to the access point used last time
+  fast_connect: true
+
+packages:
+  gpio: !include packages/gpio.yaml
+  sendspin-screen-only: !include packages/sendspin-screen-only.yaml
+  display-tft: !include packages/display-tft.yaml
+  sendspin-addon-display: !include packages/sendspin-addon-display.yaml
+  sendspin-addon-buttons: !include packages/sendspin-addon-buttons.yaml
+  # After the buttons package: browse.yaml's middle button handler must run after it
+  browse: !include packages/browse.yaml
+  # Lists on the browse page, in side button order
+  somafm-stations: !include packages/somafm-stations.yaml
+  ambient-scenes: !include packages/ambient-scenes.yaml
+  # Screens after the lists, in side button order
+  lights: !include packages/lights.yaml
+  sleep: !include packages/sleep.yaml
