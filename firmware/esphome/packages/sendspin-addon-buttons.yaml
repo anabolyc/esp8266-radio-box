@@ -23,7 +23,7 @@ substitutions:
 
 esphome:
   includes:
-    - packages/sendspin_seek.h
+    - sendspin_seek.h
   on_boot:
     - then:
         # Track whether the server currently accepts "play" from this controller

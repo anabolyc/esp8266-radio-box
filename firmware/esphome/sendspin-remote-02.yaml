@@ -8,6 +8,10 @@
 # ============================================================
 
 substitutions:
+  # Where the packages come from (see packages: below)
+  packages_url: https://github.com/anabolyc/esp8266-radio-box
+  packages_ref: master
+
   name: sendspin-remote-02
   friendly_name: Remote 02
 
@@ -32,7 +36,8 @@ substitutions:
 esphome:
   name: ${name}
   friendly_name: ${friendly_name}
-  min_version: 2026.4.0
+  # Remote packages resolve their own includes (.h files) from 2026.9.0
+  min_version: 2026.9.0
   name_add_mac_suffix: false
 
 esp32:
@@ -60,16 +65,26 @@ wifi:
   fast_connect: true
 
 packages:
-  gpio: !include packages/gpio.yaml
-  sendspin-screen-only: !include packages/sendspin-screen-only.yaml
-  display-tft: !include packages/display-tft.yaml
-  sendspin-addon-display: !include packages/sendspin-addon-display.yaml
-  sendspin-addon-buttons: !include packages/sendspin-addon-buttons.yaml
-  # After the buttons package: browse.yaml's middle button handler must run after it
-  browse: !include packages/browse.yaml
-  # Lists on the browse page, in side button order
-  somafm-stations: !include packages/somafm-stations.yaml
-  ambient-scenes: !include packages/ambient-scenes.yaml
-  # Screens after the lists, in side button order
-  lights: !include packages/lights.yaml
-  sleep: !include packages/sleep.yaml
+  # Pulled from GitHub, so this file is all ESPHome needs. To build local edits
+  # to the packages instead, point packages_url / packages_ref at your fork or
+  # branch, or replace this with !include packages/<file> lines.
+  remote:
+    url: ${packages_url}
+    ref: ${packages_ref}
+    path: firmware/esphome/packages
+    refresh: 1d
+    # In this order: later packages extend earlier ones
+    files:
+      - gpio.yaml
+      - sendspin-screen-only.yaml
+      - display-tft.yaml
+      - sendspin-addon-display.yaml
+      - sendspin-addon-buttons.yaml
+      # After the buttons package: browse.yaml's middle button handler must run after it
+      - browse.yaml
+      # Lists on the browse page, in side button order
+      - somafm-stations.yaml
+      - ambient-scenes.yaml
+      # Screens after the lists, in side button order
+      - lights.yaml
+      - sleep.yaml
