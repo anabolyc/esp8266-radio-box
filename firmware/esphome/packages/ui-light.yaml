@@ -32,7 +32,7 @@ substitutions:
 
 esphome:
   includes:
-    - packages/display_power.h
+    - display_power.h
   on_boot:
     # Before the display is set up: keep its init sequence for turning it back on
     - priority: 1000

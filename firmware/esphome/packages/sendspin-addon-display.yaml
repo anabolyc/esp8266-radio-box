@@ -49,8 +49,8 @@ substitutions:
 
 esphome:
   includes:
-    - packages/display_power.h
-    - packages/artwork_prealloc.h
+    - display_power.h
+    - artwork_prealloc.h
   on_boot:
     # Before the display is set up: keep its init sequence for turning it back on.
     # Before anything fragments the heap: create the artwork JPEG decoder (~20 KB),

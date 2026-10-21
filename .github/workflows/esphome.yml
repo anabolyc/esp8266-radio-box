@@ -73,9 +73,15 @@ jobs:
         restore-keys: |
           ${{ runner.os }}-esphome-build-${{ matrix.device }}-${{ steps.esphome.outputs.version }}-
 
+    # The device configs pull their packages from GitHub (master by default).
+    # Build the packages of the commit under test instead.
     - name: Build ${{ matrix.device }}
       working-directory: ./firmware/esphome
-      run: esphome compile ${{ matrix.device }}.yaml
+      run: >-
+        esphome
+        -s packages_url "https://github.com/${{ github.repository }}"
+        -s packages_ref "${{ github.sha }}"
+        compile ${{ matrix.device }}.yaml
 
     - name: Upload firmware
       uses: actions/upload-artifact@v4

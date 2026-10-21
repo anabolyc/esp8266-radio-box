@@ -27,7 +27,7 @@
 
 esphome:
   includes:
-    - packages/browse_list.h
+    - browse_list.h
 
 script:
   # Side button: open the next list, then the next screen, or close after the last one

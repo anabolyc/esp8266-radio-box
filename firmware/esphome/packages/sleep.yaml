@@ -25,7 +25,7 @@ substitutions:
 
 esphome:
   includes:
-    - packages/remote_sleep.h
+    - remote_sleep.h
   on_boot:
     # Before the display is set up: release pins held through deep sleep
     - priority: 1000

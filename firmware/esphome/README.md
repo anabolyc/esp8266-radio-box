@@ -114,7 +114,7 @@ It has no now-playing screen, cover art, volume or playback buttons, since it is
 - Radio Box board with the 240x240 ST7789 display, and one of:
   - LOLIN S3 mini (ESP32-S3FH4R2, 2 MB PSRAM): recommended
   - LOLIN S2 mini (ESP32-S2FH4, no PSRAM): use the [light variant](#light-variant). The full firmware runs, with reduced cover art quality, but has so little spare memory that it can crash when playback starts.
-- [ESPHome](https://esphome.io/) 2026.9.0 or newer
+- [ESPHome](https://esphome.io/) 2026.9.0 or newer (needed for the packages' `.h` includes to resolve from GitHub)
 - Music Assistant with a Sendspin speaker
 - Home Assistant with the ESPHome integration, with **Allow the device to perform Home Assistant actions** enabled for each remote (see [Build and flash](#build-and-flash)). Needed to resume playback after a stop (see [Known limitations](#known-limitations)), for everything on the [lists](#lists), and for the [Lights](#lights) screen.
 
@@ -197,6 +197,19 @@ Both boards share the D1 mini footprint, but the same header pin is a different 
 | Display reset and backlight | `display_reset_pin` | GPIO5 | GPIO4 |
 
 ## Build and flash
+
+Each device config pulls the packages from this repository on GitHub, so the device config is the only file ESPHome needs. To add a remote to the ESPHome Device Builder (or the Home Assistant add-on), create a new device and paste the contents of the config for your board. Wi-Fi credentials come from the Device Builder's own secrets.
+
+The packages come from `master` by default. Two substitutions at the top of each device config choose the source:
+
+| Substitution | Default | Description |
+|---|---|---|
+| `packages_url` | `https://github.com/anabolyc/esp8266-radio-box` | Repository to fetch the packages from, e.g. your fork |
+| `packages_ref` | `master` | Branch, tag or commit to use |
+
+ESPHome caches the packages and checks for updates once a day. To try local edits to the packages, push them to a branch and set `packages_ref`, or replace the `remote:` package with `!include packages/<file>` lines.
+
+To build from a checkout of this repository instead:
 
 ```sh
 python3 -m venv .venv
